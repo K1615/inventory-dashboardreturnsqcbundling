@@ -1435,5 +1435,5 @@
         initReturnsChart();
         refreshAllUI();
     });
-</script>
+</script> 
 @endsection
