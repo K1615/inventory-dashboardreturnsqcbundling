@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\InventorySubmoduleController;
+use App\Http\Controllers\WarehouseLayoutController;
 use App\Http\Controllers\InventoryController;
 
 // Route the root URL directly to the Inventory Dashboard
@@ -28,6 +29,16 @@ Route::prefix('inventory/api')->controller(InventorySubmoduleController::class)-
     Route::post('/pipeline/{id}/receive', 'markReceived');
 });
 
+// Routes for warehouse layouts submodule
+Route::get('/warehouse', [WarehouseLayoutController::class, 'index'])->name('warehouse.layout');
+
+// Keep your AJAX data API endpoints mapped below it
+Route::prefix('warehouse-layout')->group(function () {
+    Route::get('/data', [WarehouseLayoutController::class, 'getData'])->name('warehouse.layout.data');
+    Route::post('/request', [WarehouseLayoutController::class, 'storeRequest'])->name('warehouse.layout.request');
+    Route::post('/batch-request', [WarehouseLayoutController::class, 'storeBatchRequest'])->name('warehouse.layout.batch-request');
+    Route::post('/process/{id}', [WarehouseLayoutController::class, 'processApproval'])->name('warehouse.layout.process');
+});
 // Routes for inventory items submodule
 Route::get('/items', [InventoryController::class, 'index'])->name('inventory.index');
 
