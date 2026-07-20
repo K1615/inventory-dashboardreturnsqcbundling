@@ -71,7 +71,7 @@ return new class extends Migration {
         // Handoff record for received shipments. Applying this to real
         // stock counts is intentionally left to a separate Stock Movements
         // submodule — this table just records that a shipment happened.
-        Schema::create('stock_movements', function (Blueprint $table) {
+        Schema::create('shipment_handoffs', function (Blueprint $table) {
             $table->id();
             $table->string('inventory_item_id');
             $table->string('type'); // e.g. "receipt"
@@ -88,7 +88,7 @@ return new class extends Migration {
 
     public function down(): void
     {
-        Schema::dropIfExists('stock_movements');
+        Schema::dropIfExists('shipment_handoffs');
         Schema::dropIfExists('approval_request_items');
         Schema::dropIfExists('approval_requests');
         Schema::dropIfExists('stock_alerts');

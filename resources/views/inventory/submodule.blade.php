@@ -50,29 +50,66 @@
             </div>
             
             <!-- Sidebar Navigation Links -->
+            @php
+                // Get current route name
+                $currentRoute = request()->route()->getName();
+                // Get the requested tab from the URL, defaulting to 'dashboard'
+                $currentTab = request()->query('tab', 'dashboard'); 
+                
+                // Define your active and inactive tailwind classes
+                $activeClass = 'font-bold text-white bg-white/10 border-l-4 border-[#10B981] rounded-r-lg';
+                $inactiveClass = 'font-semibold text-blue-100 border-l-4 border-transparent hover:text-white hover:bg-white/10 rounded-lg';
+            @endphp
+
             <nav class="p-4 flex flex-col gap-1.5 overflow-y-auto flex-1">
-                <a href="#" onclick="routeTo('dashboard')" id="nav-dashboard" class="nav-item px-4 py-2.5 text-xs font-bold text-white bg-white/10 border-l-4 border-emeraldGreen rounded-r-lg transition-all">
+                
+                <!-- Dashboard -->
+                <a href="{{ route('inventory.dashboard', ['tab' => 'dashboard']) }}" 
+                onclick="if(typeof handleJsNav === 'function') handleJsNav(event, 'dashboard')" id="nav-dashboard" 
+                class="nav-item px-4 py-2.5 text-xs transition-all {{ $currentRoute === 'inventory.dashboard' && $currentTab === 'dashboard' ? $activeClass : $inactiveClass }}">
                     Dashboard
                 </a>
-                <a href="#" onclick="alert('Module in development')" class="px-4 py-2.5 text-xs font-semibold text-blue-100 rounded-lg hover:text-white hover:bg-white/10 transition-all">
+                
+                <!-- Inventory Items -->
+                <a href="{{ route('inventory.index') }}" 
+                class="nav-item px-4 py-2.5 text-xs transition-all {{ $currentRoute === 'inventory.index' ? $activeClass : $inactiveClass }}">
                     Inventory Items
                 </a>
-                <a href="#" onclick="alert('Module in development')" class="px-4 py-2.5 text-xs font-semibold text-blue-100 rounded-lg hover:text-white hover:bg-white/10 transition-all">
+                
+                <!-- Stock Movements -->
+                <a href="{{ route('stock-movements.index') }}" 
+                class="nav-item px-4 py-2.5 text-xs transition-all {{ $currentRoute === 'stock-movements.index' ? $activeClass : $inactiveClass }}">
                     Stock Movements
                 </a>
-                <a href="#" onclick="alert('Module in development')" class="px-4 py-2.5 text-xs font-semibold text-blue-100 rounded-lg hover:text-white hover:bg-white/10 transition-all">
+                
+                <!-- Warehouse Layout -->
+                <a href="{{ route('warehouse.layout') }}" 
+                class="nav-item px-4 py-2.5 text-xs transition-all {{ $currentRoute === 'warehouse.layout' ? $activeClass : $inactiveClass }}">
                     Warehouse Layout
                 </a>
-                <a href="#" onclick="routeTo('alerts')" id="nav-alerts" class="nav-item px-4 py-2.5 text-xs font-semibold text-blue-100 rounded-lg hover:text-white hover:bg-white/10 transition-all border-l-4 border-transparent flex items-center justify-between">
+                
+                <!-- Alerts & Reorders -->
+                <a href="{{ route('inventory.dashboard', ['tab' => 'alerts']) }}" 
+                onclick="if(typeof handleJsNav === 'function') handleJsNav(event, 'alerts')" id="nav-alerts" 
+                class="nav-item px-4 py-2.5 text-xs transition-all flex items-center justify-between {{ $currentRoute === 'inventory.dashboard' && $currentTab === 'alerts' ? $activeClass : $inactiveClass }}">
                     <span>Alerts & Reorders</span>
                     <span id="nav-alerts-badge" class="hidden ml-2 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full leading-none"></span>
                 </a>
-                <a href="#" onclick="routeTo('returns')" id="nav-returns" class="nav-item px-4 py-2.5 text-xs font-semibold text-blue-100 rounded-lg hover:text-white hover:bg-white/10 transition-all border-l-4 border-transparent">
+                
+                <!-- Returns & QC -->
+                <a href="{{ route('inventory.dashboard', ['tab' => 'returns']) }}" 
+                onclick="if(typeof handleJsNav === 'function') handleJsNav(event, 'returns')" id="nav-returns" 
+                class="nav-item px-4 py-2.5 text-xs transition-all {{ $currentRoute === 'inventory.dashboard' && $currentTab === 'returns' ? $activeClass : $inactiveClass }}">
                     Returns & QC
                 </a>
-                <a href="#" onclick="routeTo('bundling')" id="nav-bundling" class="nav-item px-4 py-2.5 text-xs font-semibold text-blue-100 rounded-lg hover:text-white hover:bg-white/10 transition-all border-l-4 border-transparent">
+                
+                <!-- Product Bundling -->
+                <a href="{{ route('inventory.dashboard', ['tab' => 'bundling']) }}" 
+                onclick="if(typeof handleJsNav === 'function') handleJsNav(event, 'bundling')" id="nav-bundling" 
+                class="nav-item px-4 py-2.5 text-xs transition-all {{ $currentRoute === 'inventory.dashboard' && $currentTab === 'bundling' ? $activeClass : $inactiveClass }}">
                     Product Bundling
                 </a>
+                
             </nav>
         </div>
 
@@ -1479,6 +1516,28 @@
     window.addEventListener('DOMContentLoaded', () => {
         initReturnsChart();
         refreshAllUI();
+    });
+
+    // 1. Intercept clicks if we are already inside the SPA dashboard
+    function handleJsNav(event, tabName) {
+        event.preventDefault();
+        
+        // Cleanly update the URL in the browser without reloading
+        window.history.pushState({}, '', '/?tab=' + tabName);
+        
+        // Fire your existing function to change the UI
+        routeTo(tabName);
+    }
+
+    // 2. Automatically load the module if you arrive from another page (like Inventory Items)
+    document.addEventListener('DOMContentLoaded', function() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const tab = urlParams.get('tab');
+        
+        // If there is a tab parameter, load it immediately
+        if (tab && typeof routeTo === 'function') {
+            routeTo(tab);
+        }
     });
 </script> 
 @endsection
