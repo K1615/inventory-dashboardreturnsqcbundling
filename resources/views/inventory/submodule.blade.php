@@ -63,8 +63,9 @@
                 <a href="#" onclick="alert('Module in development')" class="px-4 py-2.5 text-xs font-semibold text-blue-100 rounded-lg hover:text-white hover:bg-white/10 transition-all">
                     Warehouse Layout
                 </a>
-                <a href="#" onclick="routeTo('alerts')" id="nav-alerts" class="nav-item px-4 py-2.5 text-xs font-semibold text-blue-100 rounded-lg hover:text-white hover:bg-white/10 transition-all border-l-4 border-transparent">
-                    Alerts & Reorders
+                <a href="#" onclick="routeTo('alerts')" id="nav-alerts" class="nav-item px-4 py-2.5 text-xs font-semibold text-blue-100 rounded-lg hover:text-white hover:bg-white/10 transition-all border-l-4 border-transparent flex items-center justify-between">
+                    <span>Alerts & Reorders</span>
+                    <span id="nav-alerts-badge" class="hidden ml-2 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full leading-none"></span>
                 </a>
                 <a href="#" onclick="routeTo('returns')" id="nav-returns" class="nav-item px-4 py-2.5 text-xs font-semibold text-blue-100 rounded-lg hover:text-white hover:bg-white/10 transition-all border-l-4 border-transparent">
                     Returns & QC
@@ -299,7 +300,7 @@
                             <h4 class="text-base font-bold text-gray-800 mt-1">Alerts & Reorders</h4>
                             <p class="text-xs text-gray-500 mt-2 leading-relaxed">Review critical low-stock metrics and generate automated vendor purchase orders.</p>
                         </div>
-                        <button onclick="alert('Module in development')" class="mt-5 w-full text-center bg-white border border-gray-300 hover:border-amber-600 hover:text-amber-700 text-gray-700 text-xs font-bold py-2.5 rounded-lg transition-colors shadow-sm">
+                        <button onclick="routeTo('alerts')" class="mt-5 w-full text-center bg-white border border-gray-300 hover:border-amber-600 hover:text-amber-700 text-gray-700 text-xs font-bold py-2.5 rounded-lg transition-colors shadow-sm">
                             Manage Orders &rarr;
                         </button>
                     </div>
@@ -1021,7 +1022,28 @@
         renderBundlingApprovalTable();
         renderBundlingAuditTable();
         alertsRenderAll();
+        renderNavAlertsBadge();
     }
+
+    // Lights up a red count badge on the "Alerts & Reorders" nav item
+    // whenever there's an active (unacknowledged) or acknowledged-but-
+    // unresolved stock alert, so a low/out-of-stock situation is visible
+    // from anywhere in the app, not just when you're on that tab.
+    function renderNavAlertsBadge() {
+        const badge = document.getElementById('nav-alerts-badge');
+        const openAlerts = (appState.stockAlerts || []).filter(a => a.status === 'active' || a.status === 'acknowledged');
+
+        if (openAlerts.length === 0) {
+            badge.classList.add('hidden');
+            badge.textContent = '';
+            return;
+        }
+
+        const hasCritical = openAlerts.some(a => a.severity === 'critical');
+        badge.textContent = openAlerts.length;
+        badge.classList.remove('hidden');
+        badge.classList.toggle('bg-red-500', hasCritical);
+        badge.classList.toggle('bg-amber-500', !hasCritical);
 
     // ==========================================
     // DASHBOARD LOGIC
@@ -1538,14 +1560,27 @@
         }
         
         appState.bundlePending.forEach(req => {
+            const outOfStockParts = (req.recipe || []).filter(partId => {
+                const part = appState.inventory.find(i => i.id === partId);
+                return !part || part.stock <= 0;
+            });
+            const blocked = outOfStockParts.length > 0;
+
+            const approveBtn = blocked
+                ? `<button disabled title="Out of stock — cannot approve" class="text-xs bg-gray-300 text-gray-500 font-bold py-1 px-2 rounded cursor-not-allowed">Approve</button>`
+                : `<button onclick="resolveBundle('${req.id}', 'Approved')" class="text-xs bg-emeraldGreen hover:bg-green-600 text-white font-bold py-1 px-2 rounded transition-colors">Approve</button>`;
+
             tbody.insertAdjacentHTML('beforeend', `
                 <tr class="border-b border-gray-100 hover:bg-gray-50 transition-colors">
                     <td class="py-2 px-3 text-gray-800 font-medium">${req.requester}</td>
                     <td class="py-2 px-3 text-gray-500 text-xs">${req.requestDate}</td>
-                    <td class="py-2 px-3 text-navyBlue font-medium">${req.type}: ${req.details}</td>
+                    <td class="py-2 px-3 text-navyBlue font-medium">
+                        ${req.type}: ${req.details}
+                        ${blocked ? `<span class="block mt-0.5 text-[10px] font-bold text-red-600">⚠ Out of stock — cannot approve</span>` : ''}
+                    </td>
                     <td class="py-2 px-3 text-center">
                         <div class="flex gap-2 justify-center">
-                            <button onclick="resolveBundle('${req.id}', 'Approved')" class="text-xs bg-emeraldGreen hover:bg-green-600 text-white font-bold py-1 px-2 rounded transition-colors">Approve</button>
+                            ${approveBtn}
                             <button onclick="resolveBundle('${req.id}', 'Voided')" class="text-xs bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-2 rounded transition-colors">Void</button>
                         </div>
                     </td>
@@ -1556,6 +1591,13 @@
     window.resolveBundle = async function(id, decision) {
         const approver = document.getElementById('userSelector').value;
         const res = await fetch('/inventory/api/resolve-bundle', { method: 'POST', headers, body: JSON.stringify({id, decision, approver}) });
+
+        if (!res.ok) {
+            const err = await res.json();
+            alert(err.message || 'Could not approve this request.');
+            return;
+        }
+
         appState = await res.json(); 
         refreshAllUI();
     }

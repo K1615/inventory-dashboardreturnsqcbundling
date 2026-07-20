@@ -356,6 +356,24 @@ class InventorySubmoduleController extends Controller
         $approver = $request->approver;
 
         if ($decision === 'Approved') {
+            // Stock may have changed since this request was submitted
+            // (another bundle, a QC restock miss, etc.) — re-check every
+            // part right now instead of trusting the state at submit time.
+            $shortages = [];
+            foreach ($req->recipe as $partId) {
+                $part = InventoryItem::find($partId);
+                if (!$part || $part->stock <= 0) {
+                    $shortages[] = $part ? $part->name : $partId;
+                }
+            }
+
+            if (!empty($shortages)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Cannot approve — out of stock: ' . implode(', ', $shortages) . '.',
+                ], 400);
+            }
+
             foreach ($req->recipe as $partId) {
                 $part = InventoryItem::find($partId);
                 if ($part && $part->stock > 0) {
