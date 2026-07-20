@@ -1765,7 +1765,7 @@
         const sevStyle = { critical: 'bg-red-100 text-red-700', high: 'bg-amber-100 text-amber-700', medium: 'bg-blue-100 text-blue-700' };
 
         tbody.innerHTML = alerts.map(alert => {
-            const item = alert.inventoryItem;
+            const item = alert.inventory_item;
             const statusStyle = alert.status === 'acknowledged' ? 'text-amber-600 font-semibold' : 'text-red-600 font-semibold';
             const actions = alert.status === 'active'
                 ? `<button onclick="alertsAcknowledge(${alert.id})" class="px-2 py-0.5 bg-amber-500 text-white rounded font-bold hover:bg-amber-600 text-[11px]">Acknowledge</button>
