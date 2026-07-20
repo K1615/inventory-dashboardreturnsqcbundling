@@ -1774,7 +1774,7 @@
 
             return `
                 <tr class="hover:bg-gray-50">
-                    <td class="py-3 px-4 font-semibold text-gray-900">${item ? item.name : alert.inventory_item_id} <span class="text-gray-400 font-normal">(${alert.inventory_item_id})</span></td>
+                    <td class="py-3 px-4 font-semibold text-gray-900">${item ? item.name : 'Unknown Item'} <span class="text-gray-400 font-normal">(ID: ${alert.inventory_item_id})</span></td>
                     <td class="py-3 px-4">${typeLabels[alert.type] || alert.type}</td>
                     <td class="py-3 px-4 text-center"><span class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${sevStyle[alert.severity] || 'bg-gray-100 text-gray-600'}">${alert.severity}</span></td>
                     <td class="py-3 px-4 text-center">${alert.current_qty} / ${alert.threshold_qty}</td>
