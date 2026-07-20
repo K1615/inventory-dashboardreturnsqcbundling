@@ -14,7 +14,9 @@ class DatabaseSeeder extends Seeder
         // Call the specific submodule seeder we created earlier
         $this->call([
             InventorySystemSeeder::class,
-            InventoryStockMovementSeeder::class
+            InventoryStockMovementSeeder::class,
+            WarehouseLayoutSeeder::class,
+            ItemSeeder::class
         ]);
     }
 }
