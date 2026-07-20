@@ -59,7 +59,15 @@ class InventorySystemSeeder extends Seeder
             ['id' => 'P020', 'category' => 'Power Supply', 'name' => 'Thermaltake Smart 600W', 'stock' => 15, 'price' => 49.99, 'warehouse' => 'Warehouse B']
         ];
 
-        foreach ($items as $item) { InventoryItem::create($item); }
+        foreach ($items as $item) {
+            // Give every seeded item sensible default reorder thresholds so
+            // the Alerts & Reorders tab has real data out of the box:
+            // min ~40% above current stock, max ~3x current stock.
+            $item['minLimit'] = $item['minLimit'] ?? max(5, (int) round($item['stock'] * 0.6));
+            $item['maxLimit'] = $item['maxLimit'] ?? max($item['minLimit'] + 10, (int) round($item['stock'] * 2.5) + 10);
+            $item['auto_reorder'] = $item['auto_reorder'] ?? false;
+            InventoryItem::create($item);
+        }
 
         // Restoring Original System Logs
         $logs = [
@@ -93,5 +101,11 @@ class InventorySystemSeeder extends Seeder
             ['op' => 'admin1', 'stream' => 'Inspection', 'info' => 'Noctua NH-D15 Cooler (Source: Customer)', 'outcome' => 'Approved: Quarantined', 'statusType' => 'danger', 'created_at' => '2026-07-11 08:15:00']
         ];
         foreach ($audits as $audit) { ReturnsAuditLog::create($audit); }
+
+        // Populate stock_alerts for any seeded items that are already
+        // out-of-range, so the Alerts & Reorders tab has real data on
+        // first load instead of sitting empty until the schedule/command
+        // runs on its own.
+        \Illuminate\Support\Facades\Artisan::call('stock:check-levels');
     }
 }
