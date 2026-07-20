@@ -1044,6 +1044,7 @@
         badge.classList.remove('hidden');
         badge.classList.toggle('bg-red-500', hasCritical);
         badge.classList.toggle('bg-amber-500', !hasCritical);
+    }
 
     // ==========================================
     // DASHBOARD LOGIC
