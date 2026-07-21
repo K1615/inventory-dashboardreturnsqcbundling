@@ -2,7 +2,7 @@
 
 namespace App\Console\Commands;
 
-use App\Models\InventoryItem;
+use App\Models\Item;
 use App\Models\StockAlert;
 use App\Services\AutoReorderService;
 use Illuminate\Console\Command;
@@ -10,17 +10,17 @@ use Illuminate\Console\Command;
 class CheckStockLevels extends Command
 {
     protected $signature = 'stock:check-levels';
-    protected $description = 'Compare inventory_items stock against their own min/max limits, generate/resolve alerts, and auto-create draft POs for items with auto-reorder enabled';
+    protected $description = 'Compare items stock against their own min/max limits, generate/resolve alerts, and auto-create draft POs for items with auto-reorder enabled';
 
     public function handle(): int
     {
         $created = 0;
         $resolved = 0;
 
-        InventoryItem::all()->each(function (InventoryItem $item) use (&$created, &$resolved) {
-            $qty = $item->stock;
+        Item::all()->each(function (Item $item) use (&$created, &$resolved) {
+            $qty = $item->qty;
 
-            $existingActive = StockAlert::where('inventory_item_id', $item->id)
+            $existingActive = StockAlert::where('item_id', $item->id)
                 ->where('status', 'active')
                 ->first();
 
@@ -47,7 +47,7 @@ class CheckStockLevels extends Command
         return self::SUCCESS;
     }
 
-    private function upsertAlert(InventoryItem $item, string $type, string $severity, int $qty, int $thresholdQty, ?StockAlert $existing, int &$created): void
+    private function upsertAlert(Item $item, string $type, string $severity, int $qty, int $thresholdQty, ?StockAlert $existing, int &$created): void
     {
         if ($existing && $existing->type === $type) {
             // Same situation still ongoing — just refresh the numbers, no duplicate alert
@@ -61,7 +61,7 @@ class CheckStockLevels extends Command
         }
 
         StockAlert::create([
-            'inventory_item_id' => $item->id,
+            'item_id' => $item->id,
             'type' => $type,
             'severity' => $severity,
             'current_qty' => $qty,

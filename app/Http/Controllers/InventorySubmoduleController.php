@@ -5,14 +5,12 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use App\Models\{InventoryItem, SystemLog, QcInspection, RmaRequest, ReturnsAuditLog, BundleRequest, StockAlert, ApprovalRequest, StockMovement};
+use App\Models\{Item, SystemLog, QcInspection, RmaRequest, ReturnsAuditLog, BundleRequest, StockAlert, ApprovalRequest, StockMovement};
 use App\Services\AutoReorderService;
 use Illuminate\Support\Facades\Artisan;
 
 class InventorySubmoduleController extends Controller
 {
-    // No login system in this submodule — every mutating action is
-    // attributed to this single acting user, matching the rest of the app.
     private const ACTING_USER = 'Warehouse Manager';
 
     public function index()
@@ -28,7 +26,7 @@ class InventorySubmoduleController extends Controller
     private function getAppData()
     {
         return [
-            'inventory' => InventoryItem::all(),
+            'inventory' => Item::all(),
             'systemLogs' => SystemLog::orderBy('created_at', 'desc')->take(50)->get()->map(fn($l) => [
                 'user' => $l->user, 'action' => $l->action, 'timestamp' => $l->created_at->format('Y-m-d H:i:s')
             ]),
@@ -47,8 +45,8 @@ class InventorySubmoduleController extends Controller
             'bundleAudit' => BundleRequest::where('status', '!=', 'Pending')->orderBy('updated_at', 'desc')->get()->map(fn($b) => [
                 'id' => $b->id, 'requester' => $b->requester, 'approver' => $b->approver, 'type' => $b->type, 'details' => $b->details, 'status' => $b->status, 'actionDate' => $b->updated_at->format('Y-m-d H:i:s')
             ]),
-            'stockAlerts' => StockAlert::with('inventoryItem')->whereIn('status', ['active', 'acknowledged'])->latest()->get(),
-            'approvalRequests' => ApprovalRequest::with('items.inventoryItem')->orderBy('created_at', 'desc')->get(),
+            'stockAlerts' => StockAlert::with('item')->whereIn('status', ['active', 'acknowledged'])->latest()->get(),
+            'approvalRequests' => ApprovalRequest::with('items.item')->orderBy('created_at', 'desc')->get(),
         ];
     }
 
@@ -61,7 +59,7 @@ class InventorySubmoduleController extends Controller
             'value' => 'required|integer|min:0'
         ]);
 
-        $item = InventoryItem::findOrFail($id);
+        $item = Item::findOrFail($id);
         $oldValue = $request->target === 'min' ? $item->minLimit : $item->maxLimit;
 
         if ($request->target === 'min') {
@@ -73,8 +71,6 @@ class InventorySubmoduleController extends Controller
 
         SystemLog::create(['user' => self::ACTING_USER, 'action' => "Changed {$request->target} limit for {$item->name} ({$item->id}) from {$oldValue} to {$request->value}."]);
 
-        // Changing a threshold can make an existing alert stale in either
-        // direction, so re-run detection.
         Artisan::call('stock:check-levels');
 
         return response()->json($this->getAppData());
@@ -84,14 +80,12 @@ class InventorySubmoduleController extends Controller
     {
         $request->validate(['enabled' => 'required|boolean']);
 
-        $item = InventoryItem::findOrFail($id);
+        $item = Item::findOrFail($id);
         $item->auto_reorder = $request->boolean('enabled');
         $item->save();
 
         SystemLog::create(['user' => self::ACTING_USER, 'action' => "Turned auto-reorder " . ($item->auto_reorder ? 'ON' : 'OFF') . " for {$item->name} ({$item->id})."]);
 
-        // Run real detection so auto-reorder is evaluated against an
-        // accurate picture rather than a possibly-stale alert.
         Artisan::call('stock:check-levels');
 
         return response()->json($this->getAppData());
@@ -106,7 +100,7 @@ class InventorySubmoduleController extends Controller
             'acknowledged_at' => now(),
         ]);
 
-        SystemLog::create(['user' => self::ACTING_USER, 'action' => "Acknowledged the {$alert->severity} {$alert->type} alert for {$alert->inventory_item_id}."]);
+        SystemLog::create(['user' => self::ACTING_USER, 'action' => "Acknowledged the {$alert->severity} {$alert->type} alert for {$alert->item_id}."]);
 
         return response()->json($this->getAppData());
     }
@@ -116,7 +110,7 @@ class InventorySubmoduleController extends Controller
         $alert = StockAlert::findOrFail($id);
         $alert->update(['status' => 'resolved', 'resolved_at' => now()]);
 
-        SystemLog::create(['user' => self::ACTING_USER, 'action' => "Manually resolved the {$alert->severity} {$alert->type} alert for {$alert->inventory_item_id}."]);
+        SystemLog::create(['user' => self::ACTING_USER, 'action' => "Manually resolved the {$alert->severity} {$alert->type} alert for {$alert->item_id}."]);
 
         return response()->json($this->getAppData());
     }
@@ -143,7 +137,7 @@ class InventorySubmoduleController extends Controller
         foreach ($request->itemsArray as $item) {
             if (!isset($item['id'], $item['qty'])) continue;
             $newRequest->items()->create([
-                'inventory_item_id' => $item['id'],
+                'item_id' => $item['id'],
                 'qty' => $item['qty'],
             ]);
         }
@@ -180,14 +174,11 @@ class InventorySubmoduleController extends Controller
 
         SystemLog::create(['user' => self::ACTING_USER, 'action' => "Discarded auto-generated draft PO #{$pipeline->reqId}."]);
 
-        // Declining an auto-draft means "stop auto-ordering this item," not
-        // just "delete this one attempt" — otherwise the very next check
-        // just drafts an identical PO again.
         $autoReorderTurnedOff = false;
         if ($pipeline->source === 'auto') {
-            $itemIds = $pipeline->items->pluck('inventory_item_id')->unique();
+            $itemIds = $pipeline->items->pluck('item_id')->unique();
             foreach ($itemIds as $itemId) {
-                $item = InventoryItem::find($itemId);
+                $item = Item::find($itemId);
                 if ($item && $item->auto_reorder) {
                     $item->auto_reorder = false;
                     $item->save();
@@ -219,9 +210,6 @@ class InventorySubmoduleController extends Controller
             return response()->json($this->getAppData());
         }
 
-        // Approving means the order was placed with the supplier — it does
-        // NOT mean stock has arrived. Stock only changes once someone
-        // confirms the shipment via markReceived() below.
         $pipeline->status = 'Ordered';
         $pipeline->save();
         SystemLog::create(['user' => self::ACTING_USER, 'action' => "Approved purchase order #{$pipeline->reqId} — order placed with {$pipeline->supplier}. Awaiting delivery."]);
@@ -236,12 +224,9 @@ class InventorySubmoduleController extends Controller
             return response()->json(['success' => false, 'message' => 'Only an Ordered request can be marked as Received.'], 400);
         }
 
-        // This submodule only detects shortages and manages ordering — it
-        // does not own actual stock quantity changes. That's the Stock
-        // Movements submodule's job. Here we only record the handoff.
         foreach ($pipeline->items as $lineItem) {
             StockMovement::create([
-                'inventory_item_id' => $lineItem->inventory_item_id,
+                'item_id' => $lineItem->item_id,
                 'type' => 'receipt',
                 'qty' => $lineItem->qty,
                 'source_type' => 'purchase_order',
@@ -253,8 +238,6 @@ class InventorySubmoduleController extends Controller
         $pipeline->status = 'Received';
         $pipeline->save();
 
-        // Receiving stock can make an alert stale (e.g. it was flagged
-        // out-of-stock and is now on its way), so re-run detection.
         Artisan::call('stock:check-levels');
 
         SystemLog::create(['user' => self::ACTING_USER, 'action' => "Marked purchase order #{$pipeline->reqId} as Received — recorded for Stock Movements to apply."]);
@@ -264,7 +247,7 @@ class InventorySubmoduleController extends Controller
 
     public function submitInspection(Request $request)
     {
-        $part = InventoryItem::findOrFail($request->itemId);
+        $part = Item::findOrFail($request->itemId);
         QcInspection::create([
             'id' => 'REQ-I-' . rand(1000, 9999),
             'op' => $request->op,
@@ -278,7 +261,7 @@ class InventorySubmoduleController extends Controller
 
     public function submitRma(Request $request)
     {
-        $part = InventoryItem::findOrFail($request->itemId);
+        $part = Item::findOrFail($request->itemId);
         RmaRequest::create([
             'id' => 'REQ-R-' . rand(1000, 9999),
             'op' => $request->op,
@@ -303,7 +286,7 @@ class InventorySubmoduleController extends Controller
             
             if ($decision === 'Approved') {
                 if (str_contains($req->action, 'Restock') || str_contains($req->action, 'Open Box')) {
-                    InventoryItem::where('id', $req->itemId)->increment('stock');
+                    Item::where('id', $req->itemId)->increment('stock');
                     $outcome = "Approved: Restocked (+1)";
                     $statusType = "success";
                 } else {
@@ -356,12 +339,9 @@ class InventorySubmoduleController extends Controller
         $approver = $request->approver;
 
         if ($decision === 'Approved') {
-            // Stock may have changed since this request was submitted
-            // (another bundle, a QC restock miss, etc.) — re-check every
-            // part right now instead of trusting the state at submit time.
             $shortages = [];
             foreach ($req->recipe as $partId) {
-                $part = InventoryItem::find($partId);
+                $part = Item::find($partId);
                 if (!$part || $part->stock <= 0) {
                     $shortages[] = $part ? $part->name : $partId;
                 }
@@ -375,7 +355,7 @@ class InventorySubmoduleController extends Controller
             }
 
             foreach ($req->recipe as $partId) {
-                $part = InventoryItem::find($partId);
+                $part = Item::find($partId);
                 if ($part && $part->stock > 0) {
                     $part->decrement('stock');
                 }

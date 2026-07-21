@@ -1,22 +1,19 @@
 <?php
 
-// app/Models/ApprovalRequestItem.php
-
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class ApprovalRequestItem extends Model
 {
-    protected $fillable = ['approval_request_id', 'inventory_item_id', 'qty'];
+    use HasFactory;
 
-    public function approvalRequest()
-    {
-        return $this->belongsTo(ApprovalRequest::class, 'approval_request_id', 'reqId');
-    }
+    protected $guarded = [];
 
-    public function inventoryItem()
+    // Points the requested PO line item to the master item
+    public function item()
     {
-        return $this->belongsTo(InventoryItem::class, 'inventory_item_id', 'id');
+        return $this->belongsTo(Item::class, 'item_id', 'id');
     }
 }

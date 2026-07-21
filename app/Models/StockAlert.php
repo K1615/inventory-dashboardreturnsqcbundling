@@ -1,25 +1,19 @@
 <?php
 
-// app/Models/StockAlert.php
-
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class StockAlert extends Model
 {
-    protected $fillable = [
-        'inventory_item_id', 'type', 'severity', 'current_qty', 'threshold_qty',
-        'status', 'acknowledged_by', 'acknowledged_at', 'resolved_at',
-    ];
+    use HasFactory;
 
-    protected $casts = [
-        'acknowledged_at' => 'datetime',
-        'resolved_at' => 'datetime',
-    ];
+    protected $guarded = [];
 
-    public function inventoryItem()
+    // Points the alert to the master item
+    public function item()
     {
-        return $this->belongsTo(InventoryItem::class, 'inventory_item_id', 'id');
+        return $this->belongsTo(Item::class, 'item_id', 'id');
     }
 }

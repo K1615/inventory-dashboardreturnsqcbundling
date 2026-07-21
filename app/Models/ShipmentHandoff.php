@@ -2,21 +2,18 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-// A handoff record only. This submodule does NOT apply movements to real 
-// stock quantities — a separate Stock Movements submodule owns that.
 class ShipmentHandoff extends Model
 {
-    protected $table = 'shipment_handoffs';
+    use HasFactory;
 
-    protected $fillable = [
-        'inventory_item_id', 'type', 'qty', 'source_type', 'source_id', 'created_by', 'notes',
-    ];
+    protected $guarded = [];
 
-    public function inventoryItem(): BelongsTo
+    // Points the received shipment handoff to the master item
+    public function item()
     {
-        return $this->belongsTo(InventoryItem::class, 'inventory_item_id', 'id');
+        return $this->belongsTo(Item::class, 'item_id', 'id');
     }
 }

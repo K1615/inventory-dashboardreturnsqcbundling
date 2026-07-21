@@ -8,6 +8,11 @@ use Illuminate\Database\Eloquent\Model;
 class StockMovementRequest extends Model
 {
     use HasFactory;
+    protected $guarded = [];
 
-    protected $fillable = ['warehouse_inventory_item_id', 'requester', 'name', 'from_wh', 'from_zone', 'to_wh', 'to_zone', 'qty', 'planned_date'];
+    // Replaces the old warehouseInventoryItem() relationship
+    public function item()
+    {
+        return $this->belongsTo(Item::class, 'item_id', 'id');
+    }
 }

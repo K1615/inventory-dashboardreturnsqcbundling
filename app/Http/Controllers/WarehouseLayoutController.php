@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use App\Models\WarehouseInventoryItem;
+use App\Models\Item;
 use App\Models\StockMovementRequest;
 use App\Models\AuditMovementLog;
 use Carbon\Carbon;
@@ -19,7 +19,7 @@ class WarehouseLayoutController extends Controller
     public function getData()
     {
         return response()->json([
-            'inventory' => WarehouseInventoryItem::where('qty', '>', 0)->get(),
+            'inventory' => Item::where('qty', '>', 0)->get(),
             'pendingRequests' => StockMovementRequest::all(),
             'historyLogs' => AuditMovementLog::orderBy('created_at', 'desc')->get()
         ]);
@@ -28,7 +28,7 @@ class WarehouseLayoutController extends Controller
     public function storeRequest(Request $request)
     {
         $validated = $request->validate([
-            'itemId' => 'required|exists:warehouse_inventory_items,id',
+            'itemId' => 'required|exists:items,id',
             'requester' => 'required|string',
             'toWh' => 'required|string',
             'toZone' => 'required|string',
@@ -36,14 +36,14 @@ class WarehouseLayoutController extends Controller
             'date' => 'required|date'
         ]);
 
-        $item = WarehouseInventoryItem::findOrFail($validated['itemId']);
+        $item = Item::findOrFail($validated['itemId']);
 
         if ($validated['qty'] > $item->qty) {
             return response()->json(['error' => 'Insufficient stock structural layouts.'], 422);
         }
 
         StockMovementRequest::create([
-            'warehouse_inventory_item_id' => $item->id,
+            'item_id' => $item->id,
             'requester' => $validated['requester'],
             'name' => $item->name,
             'from_wh' => $item->warehouse,
@@ -65,17 +65,17 @@ class WarehouseLayoutController extends Controller
             'date' => 'required|date',
             'requester' => 'required|string',
             'items' => 'required|array',
-            'items.*.id' => 'required|exists:warehouse_inventory_items,id',
+            'items.*.id' => 'required|exists:items,id',
             'items.*.qty' => 'required|integer|min:1',
             'items.*.toZone' => 'required|string'
         ]);
 
         DB::transaction(function () use ($validated) {
             foreach ($validated['items'] as $itemData) {
-                $item = WarehouseInventoryItem::findOrFail($itemData['id']);
+                $item = Item::findOrFail($itemData['id']);
                 if ($itemData['qty'] <= $item->qty) {
                     StockMovementRequest::create([
-                        'warehouse_inventory_item_id' => $item->id,
+                        'item_id' => $item->id,
                         'requester' => $validated['requester'],
                         'name' => $item->name,
                         'from_wh' => $validated['srcWh'],
@@ -103,7 +103,7 @@ class WarehouseLayoutController extends Controller
 
         DB::transaction(function () use ($pending, $validated, $timestampStr) {
             if ($validated['status'] === 'approve') {
-                $sourceItem = WarehouseInventoryItem::findOrFail($pending->warehouse_inventory_item_id);
+                $sourceItem = Item::findOrFail($pending->item_id);
                 
                 if ($sourceItem->qty < $pending->qty) {
                     throw new \Exception("Insufficient stock structural layout allocation.");
@@ -112,7 +112,7 @@ class WarehouseLayoutController extends Controller
                 $sourceItem->decrement('qty', $pending->qty);
                 $sourceItem->update(['last_moved' => $timestampStr]);
 
-                $targetItem = WarehouseInventoryItem::where('name', $pending->name)
+                $targetItem = Item::where('name', $pending->name)
                     ->where('warehouse', $pending->to_wh)
                     ->where('zone', $pending->to_zone)
                     ->first();
@@ -121,7 +121,7 @@ class WarehouseLayoutController extends Controller
                     $targetItem->increment('qty', $pending->qty);
                     $targetItem->update(['last_moved' => $timestampStr]);
                 } else {
-                    WarehouseInventoryItem::create([
+                    Item::create([
                         'type' => $sourceItem->type,
                         'name' => $pending->name,
                         'warehouse' => $pending->to_wh,

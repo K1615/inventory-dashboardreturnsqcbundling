@@ -3,7 +3,7 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
-use App\Models\InventoryItem;
+use App\Models\Item;
 use App\Models\SystemLog;
 use App\Models\QcInspection;
 use App\Models\RmaRequest;
@@ -36,7 +36,6 @@ class InventorySystemSeeder extends Seeder
             ['id' => 'PRD-004', 'name' => 'ASUS ROG Strix B650E-F', 'category' => 'Motherboard', 'stock' => 4, 'price' => 250.00, 'warehouse' => 'Warehouse C'],
             ['id' => 'PRD-005', 'name' => 'EVGA SuperNOVA 850W', 'category' => 'Power Supply', 'stock' => 2, 'price' => 120.00, 'warehouse' => 'Warehouse B'],
             ['id' => 'PRD-006', 'name' => 'NZXT Kraken X63 AIO', 'category' => 'Cooler', 'stock' => 7, 'price' => 150.00, 'warehouse' => 'Warehouse A'],
-            // THESE ARE THE IDS THE BUNDLING PRESETS LOOK FOR:
             ['id' => 'P001', 'category' => 'CPU', 'name' => 'Intel Core i7-13700K', 'stock' => 12, 'price' => 389.99, 'warehouse' => 'Warehouse A'],
             ['id' => 'P002', 'category' => 'CPU', 'name' => 'AMD Ryzen 7 7800X3D', 'stock' => 8, 'price' => 359.00, 'warehouse' => 'Warehouse B'],
             ['id' => 'P003', 'category' => 'GPU', 'name' => 'NVIDIA RTX 4070 Ti', 'stock' => 5, 'price' => 799.99, 'warehouse' => 'Warehouse C'],
@@ -60,13 +59,19 @@ class InventorySystemSeeder extends Seeder
         ];
 
         foreach ($items as $item) {
-            // Give every seeded item sensible default reorder thresholds so
-            // the Alerts & Reorders tab has real data out of the box:
-            // min ~40% above current stock, max ~3x current stock.
-            $item['minLimit'] = $item['minLimit'] ?? max(5, (int) round($item['stock'] * 0.6));
-            $item['maxLimit'] = $item['maxLimit'] ?? max($item['minLimit'] + 10, (int) round($item['stock'] * 2.5) + 10);
+            // Map 'stock' to 'qty' for the new unified schema
+            $item['qty'] = $item['stock'];
+            unset($item['stock']);
+
+            $item['minLimit'] = $item['minLimit'] ?? max(5, (int) round($item['qty'] * 0.6));
+            $item['maxLimit'] = $item['maxLimit'] ?? max($item['minLimit'] + 10, (int) round($item['qty'] * 2.5) + 10);
             $item['auto_reorder'] = $item['auto_reorder'] ?? false;
-            InventoryItem::create($item);
+            
+            // This is the fix to stop the duplication crash
+            Item::updateOrCreate(
+                ['id' => $item['id']],
+                $item
+            );
         }
 
         // Restoring Original System Logs
@@ -102,10 +107,6 @@ class InventorySystemSeeder extends Seeder
         ];
         foreach ($audits as $audit) { ReturnsAuditLog::create($audit); }
 
-        // Populate stock_alerts for any seeded items that are already
-        // out-of-range, so the Alerts & Reorders tab has real data on
-        // first load instead of sitting empty until the schedule/command
-        // runs on its own.
         \Illuminate\Support\Facades\Artisan::call('stock:check-levels');
     }
 }

@@ -1,7 +1,5 @@
 <?php
 
-// database/migrations/2026_07_13_000000_create_inventory_submodule_tables.php
-
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -9,18 +7,7 @@ use Illuminate\Support\Facades\Schema;
 return new class extends Migration {
     public function up(): void
     {
-        // 1. Master Inventory Catalog
-        Schema::create('inventory_items', function (Blueprint $table) {
-            $table->string('id')->primary(); // Using string IDs like 'PC-001'
-            $table->string('name');
-            $table->string('category');
-            $table->integer('stock')->default(0);
-            $table->decimal('price', 10, 2);
-            $table->string('warehouse');
-            $table->timestamps();
-        });
-
-        // 2. System Audit Logs
+        // System Audit Logs
         Schema::create('system_logs', function (Blueprint $table) {
             $table->id();
             $table->string('user');
@@ -28,23 +15,23 @@ return new class extends Migration {
             $table->timestamp('created_at')->useCurrent();
         });
 
-        // 3. QC Inspections (Internal)
+        // QC Inspections (Internal)
         Schema::create('qc_inspections', function (Blueprint $table) {
-            $table->string('id')->primary(); // e.g., REQ-I-101
+            $table->string('id')->primary(); 
             $table->string('op');
-            $table->string('itemId');
+            $table->string('itemId'); // Will map to `items` string ID
             $table->string('product');
             $table->string('source');
             $table->string('action');
-            $table->string('status')->default('Pending'); // Pending, Approved, Voided
+            $table->string('status')->default('Pending'); 
             $table->timestamps();
         });
 
-        // 4. RMA Requests (Manufacturer)
+        // RMA Requests (Manufacturer)
         Schema::create('rma_requests', function (Blueprint $table) {
-            $table->string('id')->primary(); // e.g., REQ-R-201
+            $table->string('id')->primary(); 
             $table->string('op');
-            $table->string('itemId');
+            $table->string('itemId'); // Will map to `items` string ID
             $table->string('product');
             $table->string('vendor');
             $table->text('reasons');
@@ -52,37 +39,54 @@ return new class extends Migration {
             $table->timestamps();
         });
 
-        // 5. Finalized Returns Audit Log
+        // Finalized Returns Audit Log
         Schema::create('returns_audit_logs', function (Blueprint $table) {
             $table->id();
             $table->string('op');
-            $table->string('stream'); // Inspection, RMA
+            $table->string('stream'); 
             $table->text('info');
             $table->string('outcome');
-            $table->string('statusType'); // success, danger, neutral, void
+            $table->string('statusType'); 
             $table->timestamps();
         });
 
-        // 6. Product Bundling Requests
+        // Product Bundling Requests
         Schema::create('bundle_requests', function (Blueprint $table) {
-            $table->string('id')->primary(); // e.g., REQ-B-301
+            $table->string('id')->primary(); 
             $table->string('requester');
-            $table->string('type'); // Pre-built, Custom Build
+            $table->string('type'); 
             $table->string('details');
-            $table->json('recipe'); // Array of part IDs
-            $table->string('status')->default('Pending'); // Pending, Approved, Voided
+            $table->json('recipe'); 
+            $table->string('status')->default('Pending'); 
             $table->string('approver')->nullable();
             $table->timestamps();
+        });
+
+        // Stock Movements
+        Schema::create('stock_movements', function (Blueprint $table) {
+            $table->id();
+            $table->date('date');
+            $table->string('tx_id');
+            $table->string('item_id'); 
+            $table->string('type');
+            $table->integer('qty');
+            $table->text('note')->nullable();
+            $table->string('status');
+            $table->string('user');
+            $table->timestamps();
+
+            // Unified item_id foreign key constraint
+            $table->foreign('item_id')->references('id')->on('items')->onDelete('cascade');
         });
     }
 
     public function down(): void
     {
+        Schema::dropIfExists('stock_movements');
         Schema::dropIfExists('bundle_requests');
         Schema::dropIfExists('returns_audit_logs');
         Schema::dropIfExists('rma_requests');
         Schema::dropIfExists('qc_inspections');
         Schema::dropIfExists('system_logs');
-        Schema::dropIfExists('inventory_items');
     }
 };

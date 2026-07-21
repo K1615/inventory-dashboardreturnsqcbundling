@@ -29,7 +29,8 @@ class AutoReorderService
     {
         $created = [];
 
-        $alerts = StockAlert::with('inventoryItem')
+        // CHANGED: 'inventoryItem' to 'item'
+        $alerts = StockAlert::with('item')
             ->whereIn('status', ['active', 'acknowledged'])
             ->whereIn('type', self::TRIGGER_TYPES)
             ->get();
@@ -40,7 +41,8 @@ class AutoReorderService
         $handledThisRun = [];
 
         foreach ($alerts as $alert) {
-            $item = $alert->inventoryItem;
+            // CHANGED: 'inventoryItem' to 'item'
+            $item = $alert->item;
 
             if (!$item || !$item->auto_reorder) {
                 continue;
@@ -55,7 +57,8 @@ class AutoReorderService
                 continue;
             }
 
-            $qty = $item->reorder_qty ?? max(1, $item->maxLimit - $item->stock);
+            // CHANGED: $item->stock to $item->qty
+            $qty = $item->reorder_qty ?? max(1, $item->maxLimit - $item->qty);
 
             $draft = ApprovalRequest::create([
                 'timestamp' => now()->format('Y-m-d H:i'),
@@ -69,7 +72,8 @@ class AutoReorderService
             ]);
 
             $draft->items()->create([
-                'inventory_item_id' => $item->id,
+                // CHANGED: 'inventory_item_id' to 'item_id'
+                'item_id' => $item->id,
                 'qty' => $qty,
             ]);
 
@@ -79,7 +83,9 @@ class AutoReorderService
             ]);
 
             $handledThisRun[] = $item->id;
-            $created[] = $draft->load('items.inventoryItem');
+            
+            // CHANGED: 'items.inventoryItem' to 'items.item'
+            $created[] = $draft->load('items.item');
         }
 
         return $created;
@@ -89,11 +95,13 @@ class AutoReorderService
      * Direct DB query, bypassing Eloquent relationship resolution, so a
      * single run can never create two drafts for the same item.
      */
-    protected static function hasInFlightOrder(string $inventoryItemId): bool
+    // CHANGED: parameter from $inventoryItemId to $itemId for consistency
+    protected static function hasInFlightOrder(string $itemId): bool
     {
         return DB::table('approval_requests')
             ->join('approval_request_items', 'approval_requests.reqId', '=', 'approval_request_items.approval_request_id')
-            ->where('approval_request_items.inventory_item_id', $inventoryItemId)
+            // CHANGED: 'approval_request_items.inventory_item_id' to 'approval_request_items.item_id'
+            ->where('approval_request_items.item_id', $itemId)
             ->whereIn('approval_requests.status', self::IN_FLIGHT_STATUSES)
             ->exists();
     }
