@@ -13,7 +13,7 @@ class DatabaseSeeder extends Seeder
     {
         $this->call([
             // // 1. Master Items must be seeded first to establish foreign keys
-            // // ItemSeeder::class, 
+            ItemSeeder::class 
             
             // // // 2. Dependent seeders run sequentially after
             // // // (Ensure these files have their references updated to item_id if they exist)

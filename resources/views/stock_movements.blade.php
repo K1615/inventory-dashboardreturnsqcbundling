@@ -399,14 +399,21 @@
         })
         .then(res => res.json())
         .then(data => {
+            // DEBUG: See exactly what the backend returned
+            console.log("Backend Response:", data); 
+
             if (data.success) {
                 fetchDashboardData();
             } else {
                 alert(data.message);
-                refreshAllViews();
+                fetchDashboardData(); 
             }
         })
-        .catch(err => console.error("Error mutating status update:", err));
+        .catch(err => {
+            // DEBUG: Catch any hidden Javascript or Network errors
+            console.error("Error mutating status update:", err);
+            alert("A JavaScript error occurred. Check the console (F12)."); 
+        });
     }
 
     function filterInventoryTable() {

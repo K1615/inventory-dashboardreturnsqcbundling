@@ -8,6 +8,7 @@ use App\Models\StockMovementRequest;
 use App\Models\AuditMovementLog;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class WarehouseLayoutController extends Controller
 {
@@ -18,143 +19,182 @@ class WarehouseLayoutController extends Controller
 
     public function getData()
     {
+        $inventory = Item::all();
+        $warehouses = Item::distinct()->pluck('warehouse')->filter()->values();
+        $zones = Item::distinct()->pluck('zone')->filter()->values();
+        
+        // 1. Fetch Pending Requests
+        $requests = StockMovementRequest::with('item')
+            ->whereRaw('LOWER(status) = ?', ['pending'])
+            ->get();
+        
+        $pendingRequests = $requests->map(function ($req) {
+            return [
+                'id' => $req->id,
+                'requester' => $req->requester,
+                'name' => $req->item ? $req->item->name : 'Unknown Item',
+                'from_wh' => $req->from_wh,
+                'from_zone' => $req->from_zone,
+                'to_wh' => $req->to_wh,
+                'to_zone' => $req->to_zone,
+                'qty' => $req->qty,
+                'planned_date' => $req->planned_date,
+            ];
+        })->values()->toArray();
+
+        // 2. Fetch Completed/Voided Requests for Audit Logs
+        $logs = StockMovementRequest::with('item')
+            ->whereRaw('LOWER(status) != ?', ['pending'])
+            ->orderBy('updated_at', 'desc')
+            ->take(50) // Limit to the 50 most recent logs so the UI doesn't lag over time
+            ->get();
+            
+        $historyLogs = $logs->map(function ($log) {
+            return [
+                'type' => strtoupper($log->status), // Maps 'Approved' to 'APPROVED' for your frontend badge logic
+                'qty' => $log->qty,
+                'name' => $log->item ? $log->item->name : 'Unknown Item',
+                'from_wh' => $log->from_wh,
+                'to_wh' => $log->to_wh,
+                'zone' => $log->to_zone,
+                'raw_date' => $log->updated_at->format('Y-m-d H:i:s'),
+            ];
+        })->values()->toArray();
+
         return response()->json([
-            'inventory' => Item::where('qty', '>', 0)->get(),
-            'pendingRequests' => StockMovementRequest::all(),
-            'historyLogs' => AuditMovementLog::orderBy('created_at', 'desc')->get()
+            'inventory' => $inventory,
+            'warehouses' => $warehouses,
+            'zones' => $zones,
+            'pendingRequests' => $pendingRequests, 
+            'historyLogs' => $historyLogs // Replaced the hardcoded [] with the real database logs!
         ]);
     }
 
+    // 1. Process Single Transfer Requests
     public function storeRequest(Request $request)
     {
-        $validated = $request->validate([
-            'itemId' => 'required|exists:items,id',
-            'requester' => 'required|string',
-            'toWh' => 'required|string',
-            'toZone' => 'required|string',
-            'qty' => 'required|integer|min:1',
-            'date' => 'required|date'
-        ]);
+        try {
+            $item = Item::findOrFail($request->itemId);
 
-        $item = Item::findOrFail($validated['itemId']);
+            StockMovementRequest::create([
+                'item_id' => $item->id,
+                'requester' => $request->requester,
+                'from_wh' => $item->warehouse,
+                'from_zone' => $item->zone,
+                'to_wh' => $request->toWh,
+                'to_zone' => $request->toZone,
+                'qty' => $request->qty,
+                'planned_date' => $request->date,
+                'status' => 'Pending'
+            ]);
 
-        if ($validated['qty'] > $item->qty) {
-            return response()->json(['error' => 'Insufficient stock structural layouts.'], 422);
+            return response()->json(['success' => true]);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
         }
-
-        StockMovementRequest::create([
-            'item_id' => $item->id,
-            'requester' => $validated['requester'],
-            'name' => $item->name,
-            'from_wh' => $item->warehouse,
-            'from_zone' => $item->zone,
-            'to_wh' => $validated['toWh'],
-            'to_zone' => $validated['toZone'],
-            'qty' => $validated['qty'],
-            'planned_date' => $validated['date']
-        ]);
-
-        return response()->json(['success' => true]);
     }
 
+    // 2. Process Batch Transfer Requests
     public function storeBatchRequest(Request $request)
     {
-        $validated = $request->validate([
-            'srcWh' => 'required|string',
-            'targetWh' => 'required|string|different:srcWh',
-            'date' => 'required|date',
-            'requester' => 'required|string',
-            'items' => 'required|array',
-            'items.*.id' => 'required|exists:items,id',
-            'items.*.qty' => 'required|integer|min:1',
-            'items.*.toZone' => 'required|string'
-        ]);
-
-        DB::transaction(function () use ($validated) {
-            foreach ($validated['items'] as $itemData) {
-                $item = Item::findOrFail($itemData['id']);
-                if ($itemData['qty'] <= $item->qty) {
-                    StockMovementRequest::create([
-                        'item_id' => $item->id,
-                        'requester' => $validated['requester'],
-                        'name' => $item->name,
-                        'from_wh' => $validated['srcWh'],
-                        'from_zone' => $item->zone,
-                        'to_wh' => $validated['targetWh'],
-                        'to_zone' => $itemData['toZone'],
-                        'qty' => $itemData['qty'],
-                        'planned_date' => $validated['date']
-                    ]);
-                }
+        try {
+            foreach ($request->items as $reqItem) {
+                $item = Item::findOrFail($reqItem['id']);
+                
+                StockMovementRequest::create([
+                    'item_id' => $item->id,
+                    'requester' => $request->requester,
+                    'from_wh' => $request->srcWh,
+                    'from_zone' => $item->zone,
+                    'to_wh' => $request->targetWh,
+                    'to_zone' => $reqItem['toZone'],
+                    'qty' => $reqItem['qty'],
+                    'planned_date' => $request->date,
+                    'status' => 'Pending'
+                ]);
             }
-        });
 
-        return response()->json(['success' => true]);
+            return response()->json(['success' => true]);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        }
     }
+
 
     public function processApproval(Request $request, $id)
     {
-        $validated = $request->validate([
-            'status' => 'required|in:approve,void'
-        ]);
+        try {
+            $movementRequest = StockMovementRequest::findOrFail($id);
 
-        $pending = StockMovementRequest::findOrFail($id);
-        $timestampStr = Carbon::now();
+            // Guardrail: Lock the state machine to prevent double-clicking
+            if (strtolower($movementRequest->status) !== 'pending') {
+                return response()->json([
+                    'success' => false, 
+                    'message' => 'Action Denied: This transaction has already been processed.'
+                ], 400);
+            }
 
-        DB::transaction(function () use ($pending, $validated, $timestampStr) {
-            if ($validated['status'] === 'approve') {
-                $sourceItem = Item::findOrFail($pending->item_id);
-                
-                if ($sourceItem->qty < $pending->qty) {
-                    throw new \Exception("Insufficient stock structural layout allocation.");
+            // 1. Process Manual Void
+            if ($request->status === 'void') {
+                $movementRequest->status = 'Voided';
+                $movementRequest->save();
+                return response()->json(['success' => true]);
+            }
+
+            // 2. Process Approval
+            if ($request->status === 'approve') {
+                $sourceItem = Item::findOrFail($movementRequest->item_id);
+
+                // Auto-Void Guardrail: Prevent negative inventory if stock was used elsewhere while pending
+                if ($sourceItem->qty < $movementRequest->qty) {
+                    $movementRequest->status = 'Voided';
+                    $movementRequest->save();
+                    return response()->json([
+                        'success' => false, 
+                        'message' => 'Action Denied: Insufficient stock at source. Request has been automatically voided.'
+                    ], 400);
                 }
 
-                $sourceItem->decrement('qty', $pending->qty);
-                $sourceItem->update(['last_moved' => $timestampStr]);
+                // Step A: Deduct stock from the source location
+                $sourceItem->qty -= $movementRequest->qty;
+                $sourceItem->last_moved = now();
+                $sourceItem->save();
 
-                $targetItem = Item::where('name', $pending->name)
-                    ->where('warehouse', $pending->to_wh)
-                    ->where('zone', $pending->to_zone)
+                // Step B: Search for an exact match of this item in the destination warehouse/zone
+                $targetItem = Item::where('name', $sourceItem->name)
+                    ->where('warehouse', $movementRequest->to_wh)
+                    ->where('zone', $movementRequest->to_zone)
                     ->first();
 
                 if ($targetItem) {
-                    $targetItem->increment('qty', $pending->qty);
-                    $targetItem->update(['last_moved' => $timestampStr]);
+                    // If the item exists in the target location, simply increase its quantity
+                    $targetItem->qty += $movementRequest->qty;
+                    $targetItem->last_moved = now();
+                    $targetItem->save();
                 } else {
+                    // If the item is entirely new to this location, create a localized inventory record for it
                     Item::create([
-                        'type' => $sourceItem->type,
-                        'name' => $pending->name,
-                        'warehouse' => $pending->to_wh,
-                        'zone' => $pending->to_zone,
-                        'qty' => $pending->qty,
-                        'last_moved' => $timestampStr
+                        'id' => 'PRD-' . strtoupper(Str::random(8)), // Matches your PRD-XXXXXXXX string format
+                        'name' => $sourceItem->name,
+                        'category' => $sourceItem->category,
+                        'qty' => $movementRequest->qty,
+                        'warehouse' => $movementRequest->to_wh,
+                        'zone' => $movementRequest->to_zone,
+                        'last_moved' => now()
                     ]);
                 }
 
-                AuditMovementLog::create([
-                    'type' => 'APPROVED',
-                    'name' => $pending->name,
-                    'from_wh' => $pending->from_wh,
-                    'to_wh' => $pending->to_wh,
-                    'zone' => $pending->to_zone,
-                    'qty' => $pending->qty,
-                    'raw_date' => $pending->planned_date
-                ]);
-            } else {
-                AuditMovementLog::create([
-                    'type' => 'VOIDED',
-                    'name' => $pending->name,
-                    'from_wh' => $pending->from_wh,
-                    'to_wh' => $pending->to_wh,
-                    'zone' => $pending->to_zone,
-                    'qty' => $pending->qty,
-                    'raw_date' => $pending->planned_date
-                ]);
+                // Step C: Mark the request as complete
+                $movementRequest->status = 'Approved';
+                $movementRequest->save();
+
+                return response()->json(['success' => true]);
             }
 
-            $pending->delete();
-        });
+            return response()->json(['success' => false, 'message' => 'Invalid action type requested.'], 400);
 
-        return response()->json(['success' => true]);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        }
     }
 }

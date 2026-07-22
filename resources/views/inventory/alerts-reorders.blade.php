@@ -175,9 +175,14 @@
     let alertsStatusFilter = "all";
 
     function alertsGetStatus(item) {
-        if (parseInt(item.stock) === 0) return "Out of Stock";
-        if (parseInt(item.stock) < parseInt(item.minLimit)) return "Low Stock";
-        if (item.maxLimit > 0 && parseInt(item.stock) > parseInt(item.maxLimit)) return "Overstock";
+        // FIX: Look for item.qty instead of item.stock
+        const qty = parseInt(item.qty) || 0; 
+        const min = parseInt(item.minLimit) || 0;
+        const max = parseInt(item.maxLimit) || 0;
+
+        if (qty === 0) return "Out of Stock";
+        if (min > 0 && qty < min) return "Low Stock";
+        if (max > 0 && qty > max) return "Overstock";
         return "Normal";
     }
 
@@ -217,7 +222,12 @@
 
         const items = (appState.inventory || []).filter(item => {
             const status = alertsGetStatus(item);
-            const matchesSearch = item.name.toLowerCase().includes(search) || item.id.toLowerCase().includes(search);
+            
+            // FIX: Safely convert both name and id to strings to prevent crashes from old integer IDs or nulls!
+            const safeName = item.name ? String(item.name).toLowerCase() : '';
+            const safeId = item.id ? String(item.id).toLowerCase() : '';
+            
+            const matchesSearch = safeName.includes(search) || safeId.includes(search);
             const matchesStatus = targetFilter === 'all' || status === targetFilter;
             return matchesSearch && matchesStatus;
         });
@@ -228,20 +238,23 @@
 
         if (items.length === 0) {
             tbody.innerHTML = '';
-            noResults.classList.remove('hidden');
+            if (noResults) noResults.classList.remove('hidden');
             return;
         }
-        noResults.classList.add('hidden');
+        if (noResults) noResults.classList.add('hidden');
 
         tbody.innerHTML = items.map(item => {
             const status = alertsGetStatus(item);
+            // Safely escape the name for the PO modal button
+            const safeItemName = (item.name || '').replace(/'/g, "\\'");
+
             return `
                 <tr class="hover:bg-gray-50 border-b border-gray-100 transition">
                     <td class="py-3 px-4">
                         <div class="font-semibold text-gray-900">${item.name}</div>
                         <div class="text-xs text-gray-400">${item.category} | ${item.id}</div>
                     </td>
-                    <td class="py-3 px-2 text-center font-bold text-gray-900">${item.stock}</td>
+                    <td class="py-3 px-2 text-center font-bold text-gray-900">${item.qty}</td>
                     <td class="py-3 px-3 text-center">
                         <label class="sr-only" for="alerts-min-${item.id}">Min limit for ${item.name}</label>
                         <input type="number" id="alerts-min-${item.id}" value="${item.minLimit}" min="0" onchange="alertsUpdateLimit('${item.id}', 'min', this.value)" class="w-16 border border-gray-300 rounded text-center px-1 py-0.5 text-xs">
@@ -260,7 +273,7 @@
                         </label>
                     </td>
                     <td class="py-3 px-4 text-right">
-                        <button onclick="alertsOpenPOModal('${item.id}', '${item.name.replace(/'/g, "\\'")}')" class="px-2.5 py-1 text-xs font-semibold rounded bg-blue-50 text-navyBlue hover:bg-navyBlue hover:text-white border border-blue-200 transition">
+                        <button onclick="alertsOpenPOModal('${item.id}', '${safeItemName}')" class="px-2.5 py-1 text-xs font-semibold rounded bg-blue-50 text-navyBlue hover:bg-navyBlue hover:text-white border border-blue-200 transition">
                             Create PO
                         </button>
                     </td>
@@ -285,7 +298,8 @@
         const sevStyle = { critical: 'bg-red-100 text-red-700', high: 'bg-amber-100 text-amber-700', medium: 'bg-blue-100 text-blue-700' };
 
         tbody.innerHTML = alerts.map(alert => {
-            const item = alert.inventory_item;
+            // FIX: Point to alert.item and alert.item_id to match the database payload
+            const item = alert.item; 
             const statusStyle = alert.status === 'acknowledged' ? 'text-amber-600 font-semibold' : 'text-red-600 font-semibold';
             const actions = alert.status === 'active'
                 ? `<button onclick="alertsAcknowledge(${alert.id})" class="px-2 py-0.5 bg-amber-500 text-white rounded font-bold hover:bg-amber-600 text-[11px]">Acknowledge</button>
@@ -294,7 +308,7 @@
 
             return `
                 <tr class="hover:bg-gray-50">
-                    <td class="py-3 px-4 font-semibold text-gray-900">${item ? item.name : 'Unknown Item'} <span class="text-gray-400 font-normal">(ID: ${alert.inventory_item_id})</span></td>
+                    <td class="py-3 px-4 font-semibold text-gray-900">${item ? item.name : 'Deleted Record'} <span class="text-gray-400 font-normal">(ID: ${alert.item_id})</span></td>
                     <td class="py-3 px-4">${typeLabels[alert.type] || alert.type}</td>
                     <td class="py-3 px-4 text-center"><span class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${sevStyle[alert.severity] || 'bg-gray-100 text-gray-600'}">${alert.severity}</span></td>
                     <td class="py-3 px-4 text-center">${alert.current_qty} / ${alert.threshold_qty}</td>
@@ -375,25 +389,29 @@
     window.alertsUpdateLimit = async function(id, target, value) {
         const res = await fetch(`/inventory/api/limits/${id}`, { method: 'POST', headers, body: JSON.stringify({ target, value: parseInt(value) || 0 }) });
         appState = await res.json();
-        refreshAllUI();
+        alertsRenderAll(); // Force local redraw instantly
+        try { refreshAllUI(); } catch(e) {}
     }
 
     window.alertsToggleAutoReorder = async function(id, enabled) {
         const res = await fetch(`/inventory/api/auto-reorder/${id}`, { method: 'POST', headers, body: JSON.stringify({ enabled }) });
         appState = await res.json();
-        refreshAllUI();
+        alertsRenderAll();
+        try { refreshAllUI(); } catch(e) {}
     }
 
     window.alertsAcknowledge = async function(id) {
         const res = await fetch(`/inventory/api/alerts/${id}/acknowledge`, { method: 'POST', headers });
         appState = await res.json();
-        refreshAllUI();
+        alertsRenderAll();
+        try { refreshAllUI(); } catch(e) {}
     }
 
     window.alertsResolve = async function(id) {
         const res = await fetch(`/inventory/api/alerts/${id}/resolve`, { method: 'POST', headers });
         appState = await res.json();
-        refreshAllUI();
+        alertsRenderAll();
+        try { refreshAllUI(); } catch(e) {}
     }
 
     window.alertsSubmitDraft = async function(id) {
@@ -401,7 +419,8 @@
         const data = await res.json();
         if (data.success === false) { alert(data.message || 'Operation failed'); return; }
         appState = data;
-        refreshAllUI();
+        alertsRenderAll();
+        try { refreshAllUI(); } catch(e) {}
     }
 
     window.alertsDiscardDraft = async function(id) {
@@ -412,7 +431,8 @@
         if (data.autoReorderTurnedOff) {
             alert("This draft was declined, and auto-reorder has been turned OFF for this item so it won't be redrafted automatically.");
         }
-        refreshAllUI();
+        alertsRenderAll();
+        try { refreshAllUI(); } catch(e) {}
     }
 
     window.alertsProcessPipeline = async function(id, status) {
@@ -420,7 +440,8 @@
         const data = await res.json();
         if (data.success === false) { alert(data.message || 'Operation failed'); return; }
         appState = data;
-        refreshAllUI();
+        alertsRenderAll();
+        try { refreshAllUI(); } catch(e) {}
     }
 
     window.alertsMarkReceived = async function(id) {
@@ -428,7 +449,8 @@
         const data = await res.json();
         if (data.success === false) { alert(data.message || 'Operation failed'); return; }
         appState = data;
-        refreshAllUI();
+        alertsRenderAll();
+        try { refreshAllUI(); } catch(e) {}
     }
 
     window.alertsOpenPOModal = function(id, name) {
@@ -462,6 +484,7 @@
         const res = await fetch('/inventory/api/submit-po', { method: 'POST', headers, body: JSON.stringify(payload) });
         appState = await res.json();
         alertsClosePOModal();
-        refreshAllUI();
+        alertsRenderAll();
+        try { refreshAllUI(); } catch(e) {}
     }
 </script>

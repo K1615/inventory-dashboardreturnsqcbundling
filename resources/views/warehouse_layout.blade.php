@@ -113,10 +113,14 @@
                     <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-wide mb-1">Part Type</label>
                     <div class="flex flex-wrap gap-1" id="typeChips">
                         <button onclick="toggleChip('type', 'All')" id="type-all" class="chip text-[11px] px-2 py-1 rounded font-medium border bg-[#1E3A8A] text-white border-[#1E3A8A] transition-all">All</button>
-                        <button onclick="toggleChip('type', 'CPU')" id="type-cpu" class="chip text-[11px] px-2 py-1 rounded font-medium border border-gray-200 bg-gray-100 text-gray-600 hover:bg-gray-200 transition-all">CPUs</button>
-                        <button onclick="toggleChip('type', 'GPU')" id="type-gpu" class="chip text-[11px] px-2 py-1 rounded font-medium border border-gray-200 bg-gray-100 text-gray-600 hover:bg-gray-200 transition-all">GPUs</button>
+                        <button onclick="toggleChip('type', 'Processor')" id="type-processor" class="chip text-[11px] px-2 py-1 rounded font-medium border border-gray-200 bg-gray-100 text-gray-600 hover:bg-gray-200 transition-all">CPU</button>
+                        <button onclick="toggleChip('type', 'Graphics Card')" id="type-gpu" class="chip text-[11px] px-2 py-1 rounded font-medium border border-gray-200 bg-gray-100 text-gray-600 hover:bg-gray-200 transition-all">GPU</button>
+                        <button onclick="toggleChip('type', 'Motherboard')" id="type-mobo" class="chip text-[11px] px-2 py-1 rounded font-medium border border-gray-200 bg-gray-100 text-gray-600 hover:bg-gray-200 transition-all">Motherboard</button>
+                        <button onclick="toggleChip('type', 'Memory')" id="type-ram" class="chip text-[11px] px-2 py-1 rounded font-medium border border-gray-200 bg-gray-100 text-gray-600 hover:bg-gray-200 transition-all">RAM</button>
                         <button onclick="toggleChip('type', 'Storage')" id="type-storage" class="chip text-[11px] px-2 py-1 rounded font-medium border border-gray-200 bg-gray-100 text-gray-600 hover:bg-gray-200 transition-all">Storage</button>
-                        <button onclick="toggleChip('type', 'RAM')" id="type-ram" class="chip text-[11px] px-2 py-1 rounded font-medium border border-gray-200 bg-gray-100 text-gray-600 hover:bg-gray-200 transition-all">RAM</button>
+                        <button onclick="toggleChip('type', 'Power Supply')" id="type-psu" class="chip text-[11px] px-2 py-1 rounded font-medium border border-gray-200 bg-gray-100 text-gray-600 hover:bg-gray-200 transition-all">Power Supply</button>
+                        <button onclick="toggleChip('type', 'Case')" id="type-case" class="chip text-[11px] px-2 py-1 rounded font-medium border border-gray-200 bg-gray-100 text-gray-600 hover:bg-gray-200 transition-all">Case</button>
+                        <button onclick="toggleChip('type', 'Cooler')" id="type-cooler" class="chip text-[11px] px-2 py-1 rounded font-medium border border-gray-200 bg-gray-100 text-gray-600 hover:bg-gray-200 transition-all">Cooler</button>
                     </div>
                 </div>
 
@@ -124,9 +128,7 @@
                     <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-wide mb-1">Warehouse Location</label>
                     <div class="flex flex-col gap-1" id="warehouseChips">
                         <button onclick="toggleChip('warehouse', 'All')" id="wh-all" class="chip text-[11px] px-2 py-1 rounded font-medium border bg-[#1E3A8A] text-white border-[#1E3A8A] text-left transition-all">All Warehouses</button>
-                        <button onclick="toggleChip('warehouse', 'Main Warehouse')" id="wh-main" class="chip text-[11px] px-2 py-1 rounded font-medium border border-gray-200 bg-gray-100 text-gray-600 hover:bg-gray-200 text-left transition-all">Main Warehouse</button>
-                        <button onclick="toggleChip('warehouse', 'North Branch')" id="wh-north" class="chip text-[11px] px-2 py-1 rounded font-medium border border-gray-200 bg-gray-100 text-gray-600 hover:bg-gray-200 text-left transition-all">North Branch</button>
-                        <button onclick="toggleChip('warehouse', 'East Hub')" id="wh-east" class="chip text-[11px] px-2 py-1 rounded font-medium border border-gray-200 bg-gray-100 text-gray-600 hover:bg-gray-200 text-left transition-all">East Hub</button>
+                        <!-- Dynamic Warehouse Chips will be injected here -->
                     </div>
                 </div>
 
@@ -134,11 +136,7 @@
                     <label class="block text-[10px] font-bold text-gray-500 uppercase tracking-wide mb-1">Storage Zone</label>
                     <div class="flex flex-wrap gap-1" id="zoneChips">
                         <button onclick="toggleChip('zone', 'All')" id="zone-all" class="chip text-[11px] px-2 py-1 rounded font-medium border bg-[#1E3A8A] text-white border-[#1E3A8A] transition-all">All Zones</button>
-                        <button onclick="toggleChip('zone', 'Zone A')" id="zone-a" class="chip text-[11px] px-2 py-1 rounded font-medium border border-gray-200 bg-gray-100 text-gray-600 hover:bg-gray-200 transition-all">Zone A</button>
-                        <button onclick="toggleChip('zone', 'Zone B')" id="zone-b" class="chip text-[11px] px-2 py-1 rounded font-medium border border-gray-200 bg-gray-100 text-gray-600 hover:bg-gray-200 transition-all">Zone B</button>
-                        <button onclick="toggleChip('zone', 'Zone C')" id="zone-c" class="chip text-[11px] px-2 py-1 rounded font-medium border border-gray-200 bg-gray-100 text-gray-600 hover:bg-gray-200 transition-all">Zone C</button>
-                        <button onclick="toggleChip('zone', 'Zone D')" id="zone-d" class="chip text-[11px] px-2 py-1 rounded font-medium border border-gray-200 bg-gray-100 text-gray-600 hover:bg-gray-200 transition-all">Zone D</button>
-                        <button onclick="toggleChip('zone', 'Zone E')" id="zone-e" class="chip text-[11px] px-2 py-1 rounded font-medium border border-gray-200 bg-gray-100 text-gray-600 hover:bg-gray-200 transition-all">Zone E</button>
+                        <!-- Dynamic Zone Chips will be injected here -->
                     </div>
                 </div>
             </div>
@@ -377,6 +375,8 @@
     let inventoryData = [];
     let pendingRequests = [];
     let globalHistoryLogs = [];
+    let globalWarehouses = [];
+    let globalZones = [];
 
     let selectedTypeFilter = 'All';
     let selectedWarehouseFilter = 'All';
@@ -387,9 +387,19 @@
     let maximizedChartInstance = null;
 
     const chipMapping = {
-        type: { 'All': 'type-all', 'CPU': 'type-cpu', 'GPU': 'type-gpu', 'Storage': 'type-storage', 'RAM': 'type-ram' },
-        warehouse: { 'All': 'wh-all', 'Main Warehouse': 'wh-main', 'North Branch': 'wh-north', 'East Hub': 'wh-east' },
-        zone: { 'All': 'zone-all', 'Zone A': 'zone-a', 'Zone B': 'zone-b', 'Zone C': 'zone-c', 'Zone D': 'zone-d', 'Zone E': 'zone-e' }
+        type: { 
+            'All': 'type-all', 
+            'Processor': 'type-processor', 
+            'Graphics Card': 'type-gpu', 
+            'Motherboard': 'type-mobo',
+            'Memory': 'type-ram',
+            'Storage': 'type-storage', 
+            'Power Supply': 'type-psu',
+            'Case': 'type-case',
+            'Cooler': 'type-cooler'
+        },
+        warehouse: { 'All': 'wh-all' }, // Cleared old hardcoded locations
+        zone: { 'All': 'zone-all' }     // Cleared old hardcoded zones
     };
 
     // Global Fetch Wrapper incorporating CSRF Protection Headers
@@ -413,15 +423,66 @@
     async function loadAllData() {
         try {
             const data = await apiFetch("{{ route('warehouse.layout.data') }}");
+            
             inventoryData = data.inventory;
             pendingRequests = data.pendingRequests;
             globalHistoryLogs = data.historyLogs;
+            
+            // Assign the dynamically fetched layouts
+            globalWarehouses = data.warehouses || [];
+            globalZones = data.zones || [];
+            
+            // CRITICAL FIX: Actually execute the functions to draw the buttons and dropdowns
+            renderDynamicFilters();
+            populateModalDropdowns();
             
             filterInventory();
             renderRequestsTable();
             renderAuditLogs();
             refreshChartsData();
-        } catch (e) { console.error("Database connection failed", e); }
+        } catch (e) { 
+            console.error("Database connection failed", e); 
+        }
+    }
+
+    function renderDynamicFilters() {
+        const whContainer = document.getElementById('warehouseChips');
+        const zoneContainer = document.getElementById('zoneChips');
+
+        // Keep the 'All' buttons, remove old dynamically added ones
+        whContainer.innerHTML = `<button onclick="toggleChip('warehouse', 'All')" id="wh-all" class="chip text-[11px] px-2 py-1 rounded font-medium border bg-[#1E3A8A] text-white border-[#1E3A8A] text-left transition-all">All Warehouses</button>`;
+        zoneContainer.innerHTML = `<button onclick="toggleChip('zone', 'All')" id="zone-all" class="chip text-[11px] px-2 py-1 rounded font-medium border bg-[#1E3A8A] text-white border-[#1E3A8A] transition-all">All Zones</button>`;
+
+        // Add dynamic Warehouse chips
+        globalWarehouses.forEach((wh, index) => {
+            const safeId = `wh-dyn-${index}`;
+            chipMapping.warehouse[wh] = safeId; // Update chip mapping dynamically
+            whContainer.innerHTML += `<button onclick="toggleChip('warehouse', '${wh}')" id="${safeId}" class="chip text-[11px] px-2 py-1 rounded font-medium border border-gray-200 bg-gray-100 text-gray-600 hover:bg-gray-200 text-left transition-all">${wh}</button>`;
+        });
+
+        // Add dynamic Zone chips
+        globalZones.forEach((zone, index) => {
+            const safeId = `zone-dyn-${index}`;
+            chipMapping.zone[zone] = safeId; // Update chip mapping dynamically
+            zoneContainer.innerHTML += `<button onclick="toggleChip('zone', '${zone}')" id="${safeId}" class="chip text-[11px] px-2 py-1 rounded font-medium border border-gray-200 bg-gray-100 text-gray-600 hover:bg-gray-200 transition-all">${zone}</button>`;
+        });
+        
+        // Re-apply current active filters if they exist
+        toggleChip('warehouse', selectedWarehouseFilter);
+        toggleChip('zone', selectedZoneFilter);
+    }
+
+    function populateModalDropdowns() {
+        // Find all dropdowns that need warehouse/zone data
+        const destZoneSelect = document.getElementById('modalDestZone');
+        const batchSourceWh = document.getElementById('batchSourceWh');
+        const batchTargetWh = document.getElementById('batchTargetWh');
+
+        if(destZoneSelect) destZoneSelect.innerHTML = globalZones.map(z => `<option value="${z}">${z}</option>`).join('');
+        
+        const whOptions = globalWarehouses.map(w => `<option value="${w}">${w}</option>`).join('');
+        if(batchSourceWh) batchSourceWh.innerHTML = whOptions;
+        if(batchTargetWh) batchTargetWh.innerHTML = whOptions;
     }
 
     function toggleChip(type, value) {
@@ -452,10 +513,15 @@
     function filterInventory() {
         const searchVal = document.getElementById('searchInput').value.toLowerCase();
         const filtered = inventoryData.filter(item => {
-            const matchesSearch = item.name.toLowerCase().includes(searchVal);
-            const matchesType = (selectedTypeFilter === 'All' || item.type === selectedTypeFilter);
+            // Safety check to prevent JS crash if name is null
+            const itemName = item.name ? item.name.toLowerCase() : '';
+            const matchesSearch = itemName.includes(searchVal);
+            
+            // FIXED: Using item.category instead of item.type
+            const matchesType = (selectedTypeFilter === 'All' || item.category === selectedTypeFilter);
             const matchesWh = (selectedWarehouseFilter === 'All' || item.warehouse === selectedWarehouseFilter);
             const matchesZone = (selectedZoneFilter === 'All' || item.zone === selectedZoneFilter);
+            
             return matchesSearch && matchesType && matchesWh && matchesZone;
         });
         renderInventoryTable(filtered);
@@ -465,6 +531,43 @@
         if(!dateString) return 'N/A';
         const d = new Date(dateString);
         return `${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}/${d.getFullYear()} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+    }
+
+    function renderRequestsTable() {
+        const tbody = document.getElementById('requestTableBody');
+        if (!tbody) return; // Safeguard if element is missing
+        
+        tbody.innerHTML = '';
+        
+        // Safeguard to ensure it reads the array length properly
+        const count = Array.isArray(pendingRequests) ? pendingRequests.length : 0;
+        const countElement = document.getElementById('requestCount');
+        if (countElement) countElement.innerText = `${count} Active`;
+
+        if (count === 0) return;
+
+        pendingRequests.forEach(req => {
+            const row = document.createElement('tr');
+            row.className = "bg-amber-50/10 hover:bg-amber-50/30 transition-colors";
+            
+            // Added quotes around '${req.id}' and fallbacks (|| 'N/A') to prevent crashes
+            row.innerHTML = `
+                <td class="py-3 px-6 font-bold text-gray-600">${req.requester || 'System'}</td>
+                <td class="py-3 px-6 font-semibold text-gray-900">${req.name || 'Unknown Item'}</td>
+                <td class="py-3 px-6 text-[11px] text-gray-500"><strong>${req.from_wh || 'N/A'}</strong> <span class="text-gray-400">(${req.from_zone || 'N/A'})</span></td>
+                <td class="py-3 px-6 text-[11px] text-gray-600"><strong>${req.to_wh || 'N/A'}</strong> <span class="text-gray-400">(${req.to_zone || 'N/A'})</span></td>
+                <td class="py-3 px-6 text-center font-bold text-amber-700">${req.qty || 0} pcs</td>
+                <td class="py-3 px-6 text-center font-mono text-gray-500">${req.planned_date || 'N/A'}</td>
+                <td class="py-3 px-6 text-right">
+                    <div class="inline-flex rounded-lg border border-gray-200 bg-white p-0.5 shadow-xs">
+                        <button onclick="processApproval('${req.id}', 'approve')" class="px-2 py-1 text-[11px] font-bold text-[#10B981] hover:bg-[#10B981]/10 rounded">Approve</button>
+                        <span class="text-gray-200 self-center">|</span>
+                        <button onclick="processApproval('${req.id}', 'void')" class="px-2 py-1 text-[11px] font-bold text-[#EF4444] hover:bg-[#EF4444]/10 rounded">Void</button>
+                    </div>
+                </td>
+            `;
+            tbody.appendChild(row);
+        });
     }
 
     function renderInventoryTable(data) {
@@ -480,38 +583,12 @@
                 <td class="py-3 px-6 text-center font-bold text-navyBlue">${item.qty} pcs</td>
                 <td class="py-3 px-6 text-center font-mono text-gray-400">${formatDate(item.last_moved)}</td>
                 <td class="py-3 px-6 text-right">
-                    <button onclick="openTransferModal(${item.id})" class="text-xs font-semibold px-2.5 py-1 rounded-md bg-[#10B981] hover:bg-[#059669] text-white transition-all">Move Stock</button>
+                    <button onclick="openTransferModal('${item.id}')" class="text-xs font-semibold px-2.5 py-1 rounded-md bg-[#10B981] hover:bg-[#059669] text-white transition-all">Move Stock</button>
                 </td>
             `;
             tbody.appendChild(row);
         });
         document.getElementById('itemCount').innerText = `${data.length} item(s) found`;
-    }
-
-    function renderRequestsTable() {
-        const tbody = document.getElementById('requestTableBody');
-        tbody.innerHTML = '';
-        document.getElementById('requestCount').innerText = `${pendingRequests.length} Active`;
-        pendingRequests.forEach(req => {
-            const row = document.createElement('tr');
-            row.className = "bg-amber-50/10 hover:bg-amber-50/30 transition-colors";
-            row.innerHTML = `
-                <td class="py-3 px-6 font-bold text-gray-600">${req.requester}</td>
-                <td class="py-3 px-6 font-semibold text-gray-900">${req.name}</td>
-                <td class="py-3 px-6 text-[11px] text-gray-500"><strong>${req.from_wh}</strong> <span class="text-gray-400">(${req.from_zone})</span></td>
-                <td class="py-3 px-6 text-[11px] text-gray-600"><strong>${req.to_wh}</strong> <span class="text-gray-400">(${req.to_zone})</span></td>
-                <td class="py-3 px-6 text-center font-bold text-amber-700">${req.qty} pcs</td>
-                <td class="py-3 px-6 text-center font-mono text-gray-500">${req.planned_date}</td>
-                <td class="py-3 px-6 text-right">
-                    <div class="inline-flex rounded-lg border border-gray-200 bg-white p-0.5 shadow-xs">
-                        <button onclick="processApproval(${req.id}, 'approve')" class="px-2 py-1 text-[11px] font-bold text-[#10B981] hover:bg-[#10B981]/10 rounded">Approve</button>
-                        <span class="text-gray-200 self-center">|</span>
-                        <button onclick="processApproval(${req.id}, 'void')" class="px-2 py-1 text-[11px] font-bold text-[#EF4444] hover:bg-[#EF4444]/10 rounded">Void</button>
-                    </div>
-                </td>
-            `;
-            tbody.appendChild(row);
-        });
     }
 
     function renderAuditLogs() {
@@ -553,11 +630,13 @@
 
         const destWhDropdown = document.getElementById('modalDestWh');
         destWhDropdown.innerHTML = '';
-        ["Main Warehouse", "North Branch", "East Hub"].forEach(wh => {
+        
+        // Use real database warehouses instead of the hardcoded array
+        globalWarehouses.forEach(wh => {
             const option = document.createElement('option');
             option.value = wh;
             option.innerText = wh;
-            if (wh === item.warehouse) option.disabled = true;
+            if (wh === item.warehouse) option.disabled = true; // Can't move to same WH
             destWhDropdown.appendChild(option);
         });
 
@@ -569,7 +648,8 @@
     }
 
     async function submitTransferRequest() {
-        const id = parseInt(document.getElementById('modalItemId').value);
+        // REMOVED parseInt()
+        const id = document.getElementById('modalItemId').value; 
         const sourceItem = inventoryData.find(i => i.id === id);
         const currentSelectedAdmin = document.getElementById('currentUserSession').value;
         const toWh = document.getElementById('modalDestWh').value;
@@ -622,6 +702,11 @@
         }
 
         matchingItems.forEach(item => {
+            // Generate the dynamic zone options based on the global array
+            const dynamicZoneOptions = globalZones.map(z => 
+                `<option value="${z}" ${item.zone === z ? 'selected' : ''}>${z}</option>`
+            ).join('');
+
             const tr = document.createElement('tr');
             tr.innerHTML = `
                 <td class="p-2 text-center"><input type="checkbox" value="${item.id}" class="batch-row-checkbox cursor-pointer"></td>
@@ -631,11 +716,7 @@
                 <td class="p-2 text-center"><input type="number" min="1" max="${item.qty}" value="1" id="batchQty-${item.id}" class="w-20 p-1 border border-gray-200 rounded text-center font-semibold"></td>
                 <td class="p-2">
                     <select id="batchZone-${item.id}" class="border border-gray-200 rounded p-1 bg-gray-50 text-xs">
-                        <option value="Zone A">Zone A</option>
-                        <option value="Zone B" ${item.zone==='Zone B'?'selected':''}>Zone B</option>
-                        <option value="Zone C" ${item.zone==='Zone C'?'selected':''}>Zone C</option>
-                        <option value="Zone D" ${item.zone==='Zone D'?'selected':''}>Zone D</option>
-                        <option value="Zone E">Zone E</option>
+                        ${dynamicZoneOptions}
                     </select>
                 </td>
             `;
@@ -666,7 +747,8 @@
 
         let packageItems = [];
         checkboxes.forEach(cb => {
-            const itemId = parseInt(cb.value);
+            // REMOVED parseInt() 
+            const itemId = cb.value; 
             const sourceItem = inventoryData.find(i => i.id === itemId);
             if (sourceItem) {
                 const qty = parseInt(document.getElementById(`batchQty-${itemId}`).value);
@@ -711,8 +793,15 @@
         if (maximizedChartInstance) maximizedChartInstance.destroy();
         modal.classList.replace('hidden', 'flex');
 
-        const whTotals = { "Main Warehouse": 0, "North Branch": 0, "East Hub": 0 };
-        inventoryData.forEach(item => whTotals[item.warehouse] += item.qty);
+        // Dynamically build the expanded chart totals
+        const whTotals = {};
+        globalWarehouses.forEach(wh => whTotals[wh] = 0);
+        
+        inventoryData.forEach(item => {
+            if (whTotals[item.warehouse] !== undefined) {
+                whTotals[item.warehouse] += item.qty;
+            }
+        });
 
         if (chartType === 'pie') {
             modalTitle.innerText = "Expanded Distribution Summary Profile";
@@ -749,8 +838,15 @@
     }
 
     function refreshChartsData() {
-        const whTotals = { "Main Warehouse": 0, "North Branch": 0, "East Hub": 0 };
-        inventoryData.forEach(item => whTotals[item.warehouse] += item.qty);
+        // Dynamically build the totals object based on actual warehouses
+        const whTotals = {};
+        globalWarehouses.forEach(wh => whTotals[wh] = 0);
+        
+        inventoryData.forEach(item => {
+            if (whTotals[item.warehouse] !== undefined) {
+                whTotals[item.warehouse] += item.qty;
+            }
+        });
 
         if (pieChartInstance) {
             pieChartInstance.data.datasets[0].data = Object.values(whTotals);

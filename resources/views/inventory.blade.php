@@ -86,6 +86,8 @@
                     <option value="Storage">Storage (SSD/HDD)</option>
                     <option value="Motherboard">Motherboards</option>
                     <option value="Power Supply">Power Supplies</option>
+                    <option value="Case">Case</option>
+                    <option value="Cooler">Cooler</option>
                 </select>
             </div>
             <div>
@@ -193,6 +195,8 @@
                             <option value="Storage">Storage</option>
                             <option value="Motherboard">Motherboard</option>
                             <option value="Power Supply">Power Supply</option>
+                            <option value="Case">Case</option>
+                            <option value="Cooler">Cooler</option>
                         </select>
                     </div>
                     <div>
@@ -352,7 +356,8 @@
                     </td>
                 `;
                 row.querySelector('.data-name').innerText = item.name;
-                row.querySelector('.data-loc').innerText = item.location || 'Unassigned';
+                // Change item.location to item.zone
+                row.querySelector('.data-loc').innerText = item.zone || 'Unassigned';
                 row.querySelector('.view-btn').onclick = () => viewItemDetails(item.id);
                 row.querySelector('.edit-btn').onclick = () => openFormModal('edit', item.id);
                 row.querySelector('.del-btn').onclick = () => openDeleteModal(item.id);
@@ -385,7 +390,8 @@
             document.getElementById("viewCategory").innerText = item.category;
             document.getElementById("viewPrice").innerText = parseFloat(item.price).toFixed(2);
             document.getElementById("viewWarehouse").innerText = item.warehouse;
-            document.getElementById("viewLocation").innerText = item.location || 'N/A';
+            // Change item.location to item.zone
+            document.getElementById("viewLocation").innerText = item.zone || 'N/A';
             document.getElementById("viewQty").innerText = item.qty;
             document.getElementById("viewDesc").innerText = item.desc || "No description notes logged.";
             
@@ -420,7 +426,8 @@
                 document.getElementById("formPartQty").value = target.qty;
                 document.getElementById("formPartPrice").value = target.price;
                 document.getElementById("formPartWarehouse").value = target.warehouse;
-                document.getElementById("formPartLocation").value = target.location;
+                // Change target.location to target.zone
+                document.getElementById("formPartLocation").value = target.zone || "";
                 document.getElementById("formPartDesc").value = target.desc || "";
             }
             document.getElementById("formModal").classList.remove("hidden");
@@ -462,7 +469,7 @@
                 body: JSON.stringify({
                     type: mode === 'add' ? 'ADD' : 'EDIT',
                     requestor: getNextAdmin(),
-                    target_item_id: idVal ? parseInt(idVal) : null,
+                    target_item_id: idVal ? idVal : null, // Removed parseInt()
                     proposed_data: payload
                 })
             })
@@ -474,7 +481,7 @@
 
         function handleDeleteSubmissionEvent(e) {
             e.preventDefault();
-            const targetId = parseInt(document.getElementById("deletePartId").value);
+            const targetId = document.getElementById("deletePartId").value; // Removed parseInt()
             const target = masterInventory.find(i => i.id === targetId);
             if (!target) return;
 

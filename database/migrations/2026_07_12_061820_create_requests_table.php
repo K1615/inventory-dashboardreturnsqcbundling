@@ -13,7 +13,7 @@ return new class extends Migration {
             $table->string('requestor');
             $table->string('reviewer')->nullable();
             $table->string('outcome')->default('PENDING'); // PENDING, APPROVED, VOIDED
-            $table->unsignedBigInteger('target_item_id')->nullable(); // For EDIT/DELETE operations
+            $table->string('target_item_id')->nullable(); // For EDIT/DELETE operations
             
             // Structured data payload of the proposed change details
             $table->json('proposed_data'); 

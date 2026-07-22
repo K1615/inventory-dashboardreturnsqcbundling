@@ -5,7 +5,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use App\Models\{Item, SystemLog, QcInspection, RmaRequest, ReturnsAuditLog, BundleRequest, StockAlert, ApprovalRequest, StockMovement};
+use App\Models\{Item, SystemLog, QcInspection, RmaRequest, ReturnsAuditLog, BundleRequest, StockAlert, ApprovalRequest, StockMovement, ShipmentHandoff};
 use App\Services\AutoReorderService;
 use Illuminate\Support\Facades\Artisan;
 
@@ -144,6 +144,9 @@ class InventorySubmoduleController extends Controller
 
         SystemLog::create(['user' => self::ACTING_USER, 'action' => "Submitted a new purchase order #{$newRequest->reqId} — {$request->details}."]);
 
+        // ADD THIS LINE HERE
+        Artisan::call('stock:check-levels');
+
         return response()->json($this->getAppData());
     }
 
@@ -158,6 +161,9 @@ class InventorySubmoduleController extends Controller
         $pipeline->save();
 
         SystemLog::create(['user' => self::ACTING_USER, 'action' => "Reviewed and submitted auto-generated draft PO #{$pipeline->reqId} into the approval pipeline."]);
+
+        // ADD THIS LINE HERE
+        Artisan::call('stock:check-levels');
 
         return response()->json($this->getAppData());
     }
@@ -191,6 +197,10 @@ class InventorySubmoduleController extends Controller
 
         $data = $this->getAppData();
         $data['autoReorderTurnedOff'] = $autoReorderTurnedOff;
+
+        // ADD THIS LINE HERE
+        Artisan::call('stock:check-levels');
+        
         return response()->json($data);
     }
 
@@ -214,6 +224,9 @@ class InventorySubmoduleController extends Controller
         $pipeline->save();
         SystemLog::create(['user' => self::ACTING_USER, 'action' => "Approved purchase order #{$pipeline->reqId} — order placed with {$pipeline->supplier}. Awaiting delivery."]);
 
+        // ADD THIS LINE HERE
+        Artisan::call('stock:check-levels');
+
         return response()->json($this->getAppData());
     }
 
@@ -225,7 +238,8 @@ class InventorySubmoduleController extends Controller
         }
 
         foreach ($pipeline->items as $lineItem) {
-            StockMovement::create([
+            // 1. Log the receipt in the correct table
+            ShipmentHandoff::create([
                 'item_id' => $lineItem->item_id,
                 'type' => 'receipt',
                 'qty' => $lineItem->qty,
@@ -233,14 +247,22 @@ class InventorySubmoduleController extends Controller
                 'source_id' => $pipeline->reqId,
                 'created_by' => self::ACTING_USER,
             ]);
+
+            // 2. Actually add the quantity to the master inventory
+            $item = \App\Models\Item::find($lineItem->item_id);
+            if ($item) {
+                // Incrementing the 'qty' field as established by your schema
+                $item->increment('qty', $lineItem->qty);
+            }
         }
 
         $pipeline->status = 'Received';
         $pipeline->save();
 
+        // 3. Recalculate alerts now that the stock has actually increased
         Artisan::call('stock:check-levels');
 
-        SystemLog::create(['user' => self::ACTING_USER, 'action' => "Marked purchase order #{$pipeline->reqId} as Received — recorded for Stock Movements to apply."]);
+        SystemLog::create(['user' => self::ACTING_USER, 'action' => "Marked purchase order #{$pipeline->reqId} as Received — stock updated and recorded in Shipment Handoffs."]);
 
         return response()->json($this->getAppData());
     }
@@ -286,7 +308,7 @@ class InventorySubmoduleController extends Controller
             
             if ($decision === 'Approved') {
                 if (str_contains($req->action, 'Restock') || str_contains($req->action, 'Open Box')) {
-                    Item::where('id', $req->itemId)->increment('stock');
+                    Item::where('id', $req->itemId)->increment('qty');
                     $outcome = "Approved: Restocked (+1)";
                     $statusType = "success";
                 } else {
@@ -304,7 +326,8 @@ class InventorySubmoduleController extends Controller
             $infoStr = "{$req->product} (Vendor: {$req->vendor} - Reason: {$req->reasons})";
             
             if ($decision === 'Approved') {
-                $outcome = "Approved: Returned to Mfg";
+                Item::where('id', $req->itemId)->decrement('qty');
+                $outcome = "Approved: Returned to Mfg (-1)";
                 $statusType = "neutral";
             } else {
                 $outcome = "Voided by Manager";
@@ -312,9 +335,11 @@ class InventorySubmoduleController extends Controller
             }
         }
 
+        // Make sure there is NO closing brace '}' right above this line!
         ReturnsAuditLog::create([
             'op' => $req->op, 'stream' => $type, 'info' => $infoStr, 'outcome' => $outcome, 'statusType' => $statusType
         ]);
+        
         SystemLog::create(['user' => $req->op, 'action' => "Resolved QC {$type}: {$outcome} for {$req->product}"]);
 
         return response()->json($this->getAppData());
@@ -342,7 +367,8 @@ class InventorySubmoduleController extends Controller
             $shortages = [];
             foreach ($req->recipe as $partId) {
                 $part = Item::find($partId);
-                if (!$part || $part->stock <= 0) {
+                // FIX: Look at 'qty', not 'stock'
+                if (!$part || $part->qty <= 0) {
                     $shortages[] = $part ? $part->name : $partId;
                 }
             }
@@ -356,8 +382,9 @@ class InventorySubmoduleController extends Controller
 
             foreach ($req->recipe as $partId) {
                 $part = Item::find($partId);
-                if ($part && $part->stock > 0) {
-                    $part->decrement('stock');
+                if ($part && $part->qty > 0) {
+                    // FIX: Decrement the 'qty' column
+                    $part->decrement('qty');
                 }
             }
         }

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use App\Models\Item;
 use App\Models\InventoryRequest;
 
@@ -24,7 +25,7 @@ class InventoryController extends Controller
         $validated = $request->validate([
             'type' => 'required|in:ADD,EDIT,DELETE',
             'requestor' => 'required|string',
-            'target_item_id' => 'nullable|integer',
+            'target_item_id' => 'nullable|string', // <-- ALLOWS STRING IDs
             'proposed_data' => 'required|array'
         ]);
 
@@ -54,16 +55,18 @@ class InventoryController extends Controller
         }
 
         if ($validated['decision'] === 'approve') {
-            $data = $invRequest->proposed_data;
+            // Safety check: ensure JSON data is cast to an array if the model doesn't do it automatically
+            $data = is_string($invRequest->proposed_data) ? json_decode($invRequest->proposed_data, true) : $invRequest->proposed_data;
 
             if ($invRequest->type === 'ADD') {
                 Item::create([
+                    'id' => 'PRD-' . strtoupper(\Illuminate\Support\Str::random(8)),
                     'name' => $data['name'],
                     'category' => $data['category'],
                     'qty' => $data['qty'],
                     'price' => $data['price'],
                     'warehouse' => $data['warehouse'],
-                    'location' => $data['location'] ?? null,
+                    'zone' => $data['location'] ?? null, // Correctly mapped to the 'zone' column
                     'status' => $data['status'],
                     'desc' => $data['desc'] ?? null
                 ]);
@@ -75,7 +78,7 @@ class InventoryController extends Controller
                     'qty' => $data['qty'],
                     'price' => $data['price'],
                     'warehouse' => $data['warehouse'],
-                    'location' => $data['location'] ?? null,
+                    'zone' => $data['location'] ?? null, // Correctly mapped to the 'zone' column
                     'status' => $data['status'],
                     'desc' => $data['desc'] ?? null
                 ]);
