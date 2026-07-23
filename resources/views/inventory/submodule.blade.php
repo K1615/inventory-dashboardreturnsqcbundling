@@ -180,7 +180,7 @@
                     </div>
                     
                     <div class="relative h-48 w-full py-2">
-                        <canvas id="dashWarehouseChart"></canvas>
+                        <canvas id="dashCategoryChart"></canvas>
                     </div>
                 </div>
 
@@ -198,7 +198,7 @@
                     </div>
 
                     <div class="relative h-48 w-full py-2">
-                        <canvas id="dashCategoryChart"></canvas>
+                        <canvas id="dashWarehouseChart"></canvas>
                     </div>
                 </div>
             </div>
@@ -253,6 +253,14 @@
                                 <div class="text-xs text-red-600 font-bold uppercase tracking-wide mt-1">Out of Stock Items</div>
                             </div>
                             <span class="text-red-500 font-bold text-3xl">🚨</span>
+                        </div>
+
+                        <div class="cursor-pointer bg-blue-50 hover:bg-blue-100 border border-blue-200 p-5 rounded-xl flex items-center justify-between transition-colors shadow-sm">
+                            <div>
+                                <div id="dash-alert-over" class="text-2xl font-bold text-blue-700">0</div>
+                                <div class="text-xs text-blue-600 font-bold uppercase tracking-wide mt-1">Overstock Items</div>
+                            </div>
+                            <span class="text-blue-500 font-bold text-3xl">📦</span>
                         </div>
                     </div>
                 </div>
@@ -1073,15 +1081,23 @@
     }
 
     function updateDashCalculatedGauges() {
-        let low = 0, out = 0;
-        (appState.inventory || []).forEach(item => { 
-            // FIX: Point to item.qty instead of item.stock
+        // Mirrors alertsRenderCards() in the Alerts & Reorders module: computed
+        // live from each item's qty vs its own minLimit/maxLimit, so this
+        // widget always matches Alerts & Reorders. (Not sourced from the
+        // stockAlerts table, since that only refreshes when the
+        // stock:check-levels command runs and can be stale/empty.)
+        let low = 0, out = 0, over = 0;
+        (appState.inventory || []).forEach(item => {
             const qty = parseInt(item.qty) || 0;
-            if (qty === 0) out++; 
-            else if (qty <= 5) low++; 
+            const min = parseInt(item.minLimit) || 0;
+            const max = parseInt(item.maxLimit) || 0;
+            if (qty === 0) out++;
+            else if (min > 0 && qty < min) low++;
+            else if (max > 0 && qty > max) over++;
         });
         document.getElementById('dash-alert-low').innerText = low; 
         document.getElementById('dash-alert-out').innerText = out;
+        document.getElementById('dash-alert-over').innerText = over;
     }
 
     window.expandDashboardPanel = function(panelType) {
