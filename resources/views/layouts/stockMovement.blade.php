@@ -100,5 +100,25 @@
     <!-- Content injected here -->
     @yield('content')
 
+    <script>
+        // Populates the "Alerts & Reorders" nav badge with live data, so it's
+        // visible from this page too, not just when you're on that tab.
+        fetch('{{ route("alerts.summary") }}')
+            .then(res => res.json())
+            .then(data => {
+                const badge = document.getElementById('nav-alerts-badge');
+                if (!badge) return;
+                if (!data.count) {
+                    badge.classList.add('hidden');
+                    badge.textContent = '';
+                    return;
+                }
+                badge.textContent = data.count;
+                badge.classList.remove('hidden');
+                badge.classList.toggle('bg-red-500', data.hasCritical);
+                badge.classList.toggle('bg-amber-500', !data.hasCritical);
+            })
+            .catch(() => {});
+    </script>
 </body>
 </html>

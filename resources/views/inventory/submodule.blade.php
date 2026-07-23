@@ -170,7 +170,7 @@
                 <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col justify-between">
                     <div class="flex items-center justify-between border-b border-gray-100 pb-3 mb-4">
                         <div>
-                            <h3 class="text-sm font-bold text-gray-700 uppercase tracking-wider">Warehouse Locations</h3>
+                            <h3 class="text-sm font-bold text-gray-700 uppercase tracking-wider">Product Categories</h3>
                             <p class="text-xs text-gray-400">Inventory split by component type</p>
                         </div>
                         <div class="flex gap-2">
@@ -188,7 +188,7 @@
                 <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col justify-between">
                     <div class="flex items-center justify-between border-b border-gray-100 pb-3 mb-4">
                         <div>
-                            <h3 class="text-sm font-bold text-gray-700 uppercase tracking-wider">Product Categories</h3>
+                            <h3 class="text-sm font-bold text-gray-700 uppercase tracking-wider">Warehouse Locations</h3>
                             <p class="text-xs text-gray-400">Inventory split by storage site</p>
                         </div>
                         <div class="flex gap-2">
@@ -882,19 +882,29 @@
     // from anywhere in the app, not just when you're on that tab.
     function renderNavAlertsBadge() {
         const badge = document.getElementById('nav-alerts-badge');
-        const openAlerts = (appState.stockAlerts || []).filter(a => a.status === 'active' || a.status === 'acknowledged');
+        // Computed live from qty vs minLimit/maxLimit (same as
+        // updateDashCalculatedGauges() and alertsRenderCards()) instead of
+        // the stockAlerts table, which only refreshes when the
+        // stock:check-levels command runs and can sit stale/empty.
+        let low = 0, out = 0;
+        (appState.inventory || []).forEach(item => {
+            const qty = parseInt(item.qty) || 0;
+            const min = parseInt(item.minLimit) || 0;
+            if (qty === 0) out++;
+            else if (min > 0 && qty < min) low++;
+        });
+        const total = low + out;
 
-        if (openAlerts.length === 0) {
+        if (total === 0) {
             badge.classList.add('hidden');
             badge.textContent = '';
             return;
         }
 
-        const hasCritical = openAlerts.some(a => a.severity === 'critical');
-        badge.textContent = openAlerts.length;
+        badge.textContent = total;
         badge.classList.remove('hidden');
-        badge.classList.toggle('bg-red-500', hasCritical);
-        badge.classList.toggle('bg-amber-500', !hasCritical);
+        badge.classList.toggle('bg-red-500', out > 0);
+        badge.classList.toggle('bg-amber-500', out === 0);
     }
 
     // ==========================================

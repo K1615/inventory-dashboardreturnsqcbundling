@@ -12,6 +12,7 @@ Route::get('/', [InventorySubmoduleController::class, 'index'])->name('inventory
 // Keep the API routes grouped for your fetch calls
 Route::prefix('inventory/api')->controller(InventorySubmoduleController::class)->group(function () {
     Route::get('/state', 'getState');
+    Route::get('/alerts-summary', 'alertsSummary')->name('alerts.summary');
     Route::post('/inspection', 'submitInspection');
     Route::post('/rma', 'submitRma');
     Route::post('/resolve-return', 'resolveReturn');

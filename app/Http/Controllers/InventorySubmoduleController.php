@@ -23,6 +23,27 @@ class InventorySubmoduleController extends Controller
         return response()->json($this->getAppData());
     }
 
+    // Lightweight endpoint for the nav badge on pages that don't already
+    // load full inventory data (Inventory Items, Stock Movements,
+    // Warehouse Layout). Computed live from qty vs minLimit/maxLimit —
+    // same logic as the Alerts & Reorders and Dashboard widgets — so it
+    // never disagrees with what those pages show.
+    public function alertsSummary()
+    {
+        $low = 0; $out = 0;
+        Item::all()->each(function ($item) use (&$low, &$out) {
+            $qty = (int) $item->qty;
+            $min = (int) $item->minLimit;
+            if ($qty === 0) $out++;
+            elseif ($min > 0 && $qty < $min) $low++;
+        });
+
+        return response()->json([
+            'count' => $low + $out,
+            'hasCritical' => $out > 0,
+        ]);
+    }
+
     private function getAppData()
     {
         return [
