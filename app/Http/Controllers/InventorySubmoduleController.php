@@ -23,6 +23,15 @@ class InventorySubmoduleController extends Controller
         return response()->json($this->getAppData());
     }
 
+    // Standalone Alerts & Reorders page (separated from the tabbed dashboard SPA).
+    // Reuses the same getAppData() payload as the dashboard tab and the mutation
+    // endpoints below, so this page and the dashboard tab never disagree on data
+    // shape — only the view differs.
+    public function alertsPage()
+    {
+        return view('inventory.alerts-page', ['initialData' => $this->getAppData()]);
+    }
+
     // Lightweight endpoint for the nav badge on pages that don't already
     // load full inventory data (Inventory Items, Stock Movements,
     // Warehouse Layout). Computed live from qty vs minLimit/maxLimit —

@@ -65,10 +65,9 @@
                     Warehouse Layout
                 </a>
                 
-                <!-- Alerts & Reorders -->
-                <a href="{{ route('inventory.dashboard', ['tab' => 'alerts']) }}" 
-                onclick="if(typeof handleJsNav === 'function') handleJsNav(event, 'alerts')" id="nav-alerts" 
-                class="nav-item px-4 py-2.5 text-xs transition-all flex items-center justify-between {{ $currentRoute === 'inventory.dashboard' && $currentTab === 'alerts' ? $activeClass : $inactiveClass }}">
+                <!-- Alerts & Reorders (now its own page) -->
+                <a href="{{ route('inventory.alerts') }}" id="nav-alerts" 
+                class="nav-item px-4 py-2.5 text-xs transition-all flex items-center justify-between {{ $currentRoute === 'inventory.alerts' ? $activeClass : $inactiveClass }}">
                     <span>Alerts & Reorders</span>
                     <span id="nav-alerts-badge" class="hidden ml-2 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full leading-none"></span>
                 </a>

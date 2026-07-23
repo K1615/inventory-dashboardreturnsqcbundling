@@ -40,6 +40,9 @@ Route::patch('/api/stock-movements/{txId}/status', [StockMovementController::cla
 // Routes for warehouse layouts submodule
 Route::get('/warehouse', [WarehouseLayoutController::class, 'index'])->name('warehouse.layout');
 
+// Route for the standalone Alerts & Reorders page
+Route::get('/alerts', [InventorySubmoduleController::class, 'alertsPage'])->name('inventory.alerts');
+
 // Keep your AJAX data API endpoints mapped below it
 Route::prefix('warehouse-layout')->group(function () {
     Route::get('/data', [WarehouseLayoutController::class, 'getData'])->name('warehouse.layout.data');

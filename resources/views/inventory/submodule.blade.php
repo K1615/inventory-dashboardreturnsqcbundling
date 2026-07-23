@@ -88,10 +88,9 @@
                     Warehouse Layout
                 </a>
                 
-                <!-- Alerts & Reorders -->
-                <a href="{{ route('inventory.dashboard', ['tab' => 'alerts']) }}" 
-                onclick="if(typeof handleJsNav === 'function') handleJsNav(event, 'alerts')" id="nav-alerts" 
-                class="nav-item px-4 py-2.5 text-xs transition-all flex items-center justify-between {{ $currentRoute === 'inventory.dashboard' && $currentTab === 'alerts' ? $activeClass : $inactiveClass }}">
+                <!-- Alerts & Reorders (now its own page) -->
+                <a href="{{ route('inventory.alerts') }}" id="nav-alerts" 
+                class="nav-item px-4 py-2.5 text-xs transition-all flex items-center justify-between {{ $inactiveClass }}">
                     <span>Alerts & Reorders</span>
                     <span id="nav-alerts-badge" class="hidden ml-2 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full leading-none"></span>
                 </a>
@@ -313,7 +312,7 @@
                             <h4 class="text-base font-bold text-gray-800 mt-1">Alerts & Reorders</h4>
                             <p class="text-xs text-gray-500 mt-2 leading-relaxed">Review critical low-stock metrics and generate automated vendor purchase orders.</p>
                         </div>
-                        <button onclick="handleJsNav(event, 'alerts')" class="mt-5 w-full text-center bg-white border border-gray-300 hover:border-amber-600 hover:text-amber-700 text-gray-700 text-xs font-bold py-2.5 rounded-lg transition-colors shadow-sm">
+                        <button onclick="window.location.href='{{ route('inventory.alerts') }}'" class="mt-5 w-full text-center bg-white border border-gray-300 hover:border-amber-600 hover:text-amber-700 text-gray-700 text-xs font-bold py-2.5 rounded-lg transition-colors shadow-sm">
                             Manage Orders &rarr;
                         </button>
                     </div>
@@ -733,7 +732,7 @@
         </section>
 
         <!-- ========================================== -->
-        @include('inventory.alerts-reorders')
+        {{-- Alerts & Reorders moved to its own page: resources/views/inventory/alerts-page.blade.php --}}
 
     <!-- ========================================== -->
     <!-- GLOBAL MODALS OVERLAYS                     -->
@@ -872,39 +871,34 @@
         renderBundlingPresets();
         renderBundlingApprovalTable();
         renderBundlingAuditTable();
-        alertsRenderAll();
         renderNavAlertsBadge();
     }
 
-    // Lights up a red count badge on the "Alerts & Reorders" nav item
-    // whenever there's an active (unacknowledged) or acknowledged-but-
-    // unresolved stock alert, so a low/out-of-stock situation is visible
-    // from anywhere in the app, not just when you're on that tab.
+    // Lights up a red count badge on the "Alerts & Reorders" nav item whenever
+    // there's a low/out-of-stock item, so it's visible from anywhere in the
+    // app, not just on the Alerts & Reorders page itself. Now that Alerts &
+    // Reorders is its own page with its own appState, this dashboard page uses
+    // the same lightweight /inventory/api/alerts-summary endpoint the other
+    // standalone pages (Inventory Items, Stock Movements, Warehouse Layout)
+    // already use, instead of computing it from a local appState.inventory
+    // copy that could go stale.
     function renderNavAlertsBadge() {
         const badge = document.getElementById('nav-alerts-badge');
-        // Computed live from qty vs minLimit/maxLimit (same as
-        // updateDashCalculatedGauges() and alertsRenderCards()) instead of
-        // the stockAlerts table, which only refreshes when the
-        // stock:check-levels command runs and can sit stale/empty.
-        let low = 0, out = 0;
-        (appState.inventory || []).forEach(item => {
-            const qty = parseInt(item.qty) || 0;
-            const min = parseInt(item.minLimit) || 0;
-            if (qty === 0) out++;
-            else if (min > 0 && qty < min) low++;
-        });
-        const total = low + out;
-
-        if (total === 0) {
-            badge.classList.add('hidden');
-            badge.textContent = '';
-            return;
-        }
-
-        badge.textContent = total;
-        badge.classList.remove('hidden');
-        badge.classList.toggle('bg-red-500', out > 0);
-        badge.classList.toggle('bg-amber-500', out === 0);
+        if (!badge) return;
+        fetch('{{ route("alerts.summary") }}')
+            .then(res => res.json())
+            .then(data => {
+                if (!data.count) {
+                    badge.classList.add('hidden');
+                    badge.textContent = '';
+                    return;
+                }
+                badge.textContent = data.count;
+                badge.classList.remove('hidden');
+                badge.classList.toggle('bg-red-500', data.hasCritical);
+                badge.classList.toggle('bg-amber-500', !data.hasCritical);
+            })
+            .catch(() => {});
     }
 
     // ==========================================
