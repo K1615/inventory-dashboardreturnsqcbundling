@@ -816,7 +816,9 @@
             modalTitle.innerText = "Expanded Historic Activity Velocity";
             const barDataMap = {};
             globalHistoryLogs.filter(l => l.type === "APPROVED").forEach(t => {
-                let dKey = t.raw_date || "2026-07-11";
+                // Same fix as the inline chart — group by date only, not
+                // the full timestamp, so this stays consistent with it.
+                let dKey = (t.raw_date || "2026-07-11 00:00:00").slice(0, 10);
                 barDataMap[dKey] = (barDataMap[dKey] || 0) + 1;
             });
             const sortedDates = Object.keys(barDataMap).sort();
@@ -863,7 +865,12 @@
 
         const barDataMap = {};
         globalHistoryLogs.filter(l => l.type === "APPROVED").forEach(t => {
-            let dKey = t.raw_date || "2026-07-11";
+            // Group by date only (Y-m-d) — raw_date is a full 'Y-m-d H:i:s'
+            // timestamp, and grouping by that meant almost every approved
+            // transfer landed in its own bucket (nothing shares an exact
+            // second), so the chart was really just one bar per transfer
+            // instead of a daily volume trend.
+            let dKey = (t.raw_date || "2026-07-11 00:00:00").slice(0, 10);
             barDataMap[dKey] = (barDataMap[dKey] || 0) + 1;
         });
         const sortedDates = Object.keys(barDataMap).sort();

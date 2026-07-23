@@ -8,6 +8,7 @@ use App\Models\StockMovementRequest;
 use App\Models\AuditMovementLog;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Str;
 
 class WarehouseLayoutController extends Controller
@@ -57,7 +58,12 @@ class WarehouseLayoutController extends Controller
                 'from_wh' => $log->from_wh,
                 'to_wh' => $log->to_wh,
                 'zone' => $log->to_zone,
-                'raw_date' => $log->updated_at->format('Y-m-d H:i:s'),
+                // Use the planned_date the user selected on the request (not
+                // updated_at, which is just the moment it got approved/voided).
+                // Fall back to updated_at only if planned_date is missing.
+                'raw_date' => $log->planned_date
+                    ? Carbon::parse($log->planned_date)->format('Y-m-d H:i:s')
+                    : $log->updated_at->format('Y-m-d H:i:s'),
             ];
         })->values()->toArray();
 
@@ -187,6 +193,13 @@ class WarehouseLayoutController extends Controller
                 // Step C: Mark the request as complete
                 $movementRequest->status = 'Approved';
                 $movementRequest->save();
+
+                // Step D: Recalculate alerts now that quantities at both the
+                // source and destination have changed. Without this, an
+                // alert (e.g. Overstock) that's no longer true after the
+                // transfer stays stuck until some other endpoint happens to
+                // trigger a recheck.
+                Artisan::call('stock:check-levels');
 
                 return response()->json(['success' => true]);
             }

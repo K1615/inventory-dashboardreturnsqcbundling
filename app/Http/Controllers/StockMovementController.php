@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Item;
 use App\Models\StockMovement; // Your newly seeded model!
+use Illuminate\Support\Facades\Artisan;
 
 
 class StockMovementController extends Controller
@@ -133,6 +134,14 @@ class StockMovementController extends Controller
             // Apply the requested status (Approved or manually Voided) and save
             $movement->status = $newStatus;
             $movement->save();
+
+            // Recalculate alerts now that qty may have changed — otherwise
+            // an alert that's no longer true after this movement (e.g. an
+            // Overstock that a Stock-Out just fixed) stays stuck until some
+            // other endpoint happens to trigger a recheck.
+            if ($newStatus === 'Approved') {
+                Artisan::call('stock:check-levels');
+            }
 
             return response()->json([
                 'success' => true

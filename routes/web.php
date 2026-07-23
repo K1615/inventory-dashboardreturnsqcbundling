@@ -22,8 +22,6 @@ Route::prefix('inventory/api')->controller(InventorySubmoduleController::class)-
     // Alerts & Reorders submodule
     Route::post('/limits/{id}', 'updateItemLimits');
     Route::post('/auto-reorder/{id}', 'toggleAutoReorder');
-    Route::post('/alerts/{id}/acknowledge', 'acknowledgeAlert');
-    Route::post('/alerts/{id}/resolve', 'resolveAlert');
     Route::post('/submit-po', 'submitPO');
     Route::post('/draft/{id}/submit', 'submitDraft');
     Route::post('/draft/{id}/discard', 'discardDraft');

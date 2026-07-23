@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Artisan;
 use App\Models\Item;
 use App\Models\InventoryRequest;
 
@@ -88,6 +89,12 @@ class InventoryController extends Controller
             }
 
             $invRequest->outcome = 'APPROVED';
+
+            // Recalculate alerts now that an item was added/edited/removed —
+            // otherwise an alert (e.g. Overstock) that's no longer true
+            // after this change stays stuck until some other endpoint
+            // happens to trigger a recheck.
+            Artisan::call('stock:check-levels');
         } else {
             $invRequest->outcome = 'VOIDED';
         }

@@ -46,12 +46,10 @@
                                 <th class="py-3 px-4">Type</th>
                                 <th class="py-3 px-4 text-center">Severity</th>
                                 <th class="py-3 px-4 text-center">Qty / Threshold</th>
-                                <th class="py-3 px-4 text-center">Status</th>
-                                <th class="py-3 px-4 text-right">Actions</th>
                             </tr>
                         </thead>
                         <tbody id="alerts-table-body" class="divide-y divide-gray-100 text-gray-700">
-                            <tr><td colspan="6" class="py-6 text-center text-gray-400 italic">No active alerts.</td></tr>
+                            <tr><td colspan="4" class="py-6 text-center text-gray-400 italic">No active alerts.</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -299,12 +297,7 @@
 
         tbody.innerHTML = alerts.map(alert => {
             // FIX: Point to alert.item and alert.item_id to match the database payload
-            const item = alert.item; 
-            const statusStyle = alert.status === 'acknowledged' ? 'text-amber-600 font-semibold' : 'text-red-600 font-semibold';
-            const actions = alert.status === 'active'
-                ? `<button onclick="alertsAcknowledge(${alert.id})" class="px-2 py-0.5 bg-amber-500 text-white rounded font-bold hover:bg-amber-600 text-[11px]">Acknowledge</button>
-                   <button onclick="alertsResolve(${alert.id})" class="px-2 py-0.5 bg-emeraldGreen text-white rounded font-bold hover:bg-emeraldGreen/90 text-[11px] ml-1">Resolve</button>`
-                : `<button onclick="alertsResolve(${alert.id})" class="px-2 py-0.5 bg-emeraldGreen text-white rounded font-bold hover:bg-emeraldGreen/90 text-[11px]">Resolve</button>`;
+            const item = alert.item;
 
             return `
                 <tr class="hover:bg-gray-50">
@@ -312,8 +305,6 @@
                     <td class="py-3 px-4">${typeLabels[alert.type] || alert.type}</td>
                     <td class="py-3 px-4 text-center"><span class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${sevStyle[alert.severity] || 'bg-gray-100 text-gray-600'}">${alert.severity}</span></td>
                     <td class="py-3 px-4 text-center">${alert.current_qty} / ${alert.threshold_qty}</td>
-                    <td class="py-3 px-4 text-center ${statusStyle}">${alert.status}</td>
-                    <td class="py-3 px-4 text-right whitespace-nowrap">${actions}</td>
                 </tr>`;
         }).join('');
     }
@@ -384,6 +375,27 @@
         alertsRenderTable();
         alertsRenderAlertsTable();
         alertsRenderPipelineTable();
+        alertsUpdateNavBadge();
+    }
+
+    // Keeps the sidebar's "Alerts & Reorders" badge in sync with this page's
+    // own appState after every action here (submit PO, change a limit,
+    // toggle auto-reorder, etc.), instead of only reflecting whatever count
+    // was fetched once when the page first loaded.
+    function alertsUpdateNavBadge() {
+        const badge = document.getElementById('nav-alerts-badge');
+        if (!badge) return;
+        const activeAlerts = (appState.stockAlerts || []).filter(a => a.status === 'active');
+        if (activeAlerts.length === 0) {
+            badge.classList.add('hidden');
+            badge.textContent = '';
+            return;
+        }
+        badge.textContent = activeAlerts.length;
+        badge.classList.remove('hidden');
+        const hasCritical = activeAlerts.some(a => a.type === 'out_of_stock');
+        badge.classList.toggle('bg-red-500', hasCritical);
+        badge.classList.toggle('bg-amber-500', !hasCritical);
     }
 
     window.alertsUpdateLimit = async function(id, target, value) {
@@ -395,20 +407,6 @@
 
     window.alertsToggleAutoReorder = async function(id, enabled) {
         const res = await fetch(`/inventory/api/auto-reorder/${id}`, { method: 'POST', headers, body: JSON.stringify({ enabled }) });
-        appState = await res.json();
-        alertsRenderAll();
-        try { refreshAllUI(); } catch(e) {}
-    }
-
-    window.alertsAcknowledge = async function(id) {
-        const res = await fetch(`/inventory/api/alerts/${id}/acknowledge`, { method: 'POST', headers });
-        appState = await res.json();
-        alertsRenderAll();
-        try { refreshAllUI(); } catch(e) {}
-    }
-
-    window.alertsResolve = async function(id) {
-        const res = await fetch(`/inventory/api/alerts/${id}/resolve`, { method: 'POST', headers });
         appState = await res.json();
         alertsRenderAll();
         try { refreshAllUI(); } catch(e) {}
