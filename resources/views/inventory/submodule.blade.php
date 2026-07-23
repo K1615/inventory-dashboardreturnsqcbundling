@@ -170,7 +170,7 @@
                 <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col justify-between">
                     <div class="flex items-center justify-between border-b border-gray-100 pb-3 mb-4">
                         <div>
-                            <h3 class="text-sm font-bold text-gray-700 uppercase tracking-wider">Product Categories</h3>
+                            <h3 class="text-sm font-bold text-gray-700 uppercase tracking-wider">Warehouse Locations</h3>
                             <p class="text-xs text-gray-400">Inventory split by component type</p>
                         </div>
                         <div class="flex gap-2">
