@@ -34,22 +34,17 @@ class InventorySubmoduleController extends Controller
 
     // Lightweight endpoint for the nav badge on pages that don't already
     // load full inventory data (Inventory Items, Stock Movements,
-    // Warehouse Layout). Computed live from qty vs minLimit/maxLimit —
-    // same logic as the Alerts & Reorders and Dashboard widgets — so it
-    // never disagrees with what those pages show.
+    // Warehouse Layout, Dashboard). Counts the same active stock_alerts
+    // records shown in the Active Stock Alerts table on the Alerts &
+    // Reorders page — including Overstock — so the badge never disagrees
+    // with what that table actually shows.
     public function alertsSummary()
     {
-        $low = 0; $out = 0;
-        Item::all()->each(function ($item) use (&$low, &$out) {
-            $qty = (int) $item->qty;
-            $min = (int) $item->minLimit;
-            if ($qty === 0) $out++;
-            elseif ($min > 0 && $qty < $min) $low++;
-        });
+        $activeAlerts = StockAlert::where('status', 'active')->get();
 
         return response()->json([
-            'count' => $low + $out,
-            'hasCritical' => $out > 0,
+            'count' => $activeAlerts->count(),
+            'hasCritical' => $activeAlerts->contains('type', 'out_of_stock'),
         ]);
     }
 
@@ -117,30 +112,6 @@ class InventorySubmoduleController extends Controller
         SystemLog::create(['user' => self::ACTING_USER, 'action' => "Turned auto-reorder " . ($item->auto_reorder ? 'ON' : 'OFF') . " for {$item->name} ({$item->id})."]);
 
         Artisan::call('stock:check-levels');
-
-        return response()->json($this->getAppData());
-    }
-
-    public function acknowledgeAlert($id)
-    {
-        $alert = StockAlert::findOrFail($id);
-        $alert->update([
-            'status' => 'acknowledged',
-            'acknowledged_by' => self::ACTING_USER,
-            'acknowledged_at' => now(),
-        ]);
-
-        SystemLog::create(['user' => self::ACTING_USER, 'action' => "Acknowledged the {$alert->severity} {$alert->type} alert for {$alert->item_id}."]);
-
-        return response()->json($this->getAppData());
-    }
-
-    public function resolveAlert($id)
-    {
-        $alert = StockAlert::findOrFail($id);
-        $alert->update(['status' => 'resolved', 'resolved_at' => now()]);
-
-        SystemLog::create(['user' => self::ACTING_USER, 'action' => "Manually resolved the {$alert->severity} {$alert->type} alert for {$alert->item_id}."]);
 
         return response()->json($this->getAppData());
     }
