@@ -3,7 +3,7 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
-use App\Models\InventoryItem;
+use App\Models\Item;
 use App\Models\SystemLog;
 use App\Models\QcInspection;
 use App\Models\RmaRequest;
@@ -36,7 +36,6 @@ class InventorySystemSeeder extends Seeder
             ['id' => 'PRD-004', 'name' => 'ASUS ROG Strix B650E-F', 'category' => 'Motherboard', 'stock' => 4, 'price' => 250.00, 'warehouse' => 'Warehouse C'],
             ['id' => 'PRD-005', 'name' => 'EVGA SuperNOVA 850W', 'category' => 'Power Supply', 'stock' => 2, 'price' => 120.00, 'warehouse' => 'Warehouse B'],
             ['id' => 'PRD-006', 'name' => 'NZXT Kraken X63 AIO', 'category' => 'Cooler', 'stock' => 7, 'price' => 150.00, 'warehouse' => 'Warehouse A'],
-            // THESE ARE THE IDS THE BUNDLING PRESETS LOOK FOR:
             ['id' => 'P001', 'category' => 'CPU', 'name' => 'Intel Core i7-13700K', 'stock' => 12, 'price' => 389.99, 'warehouse' => 'Warehouse A'],
             ['id' => 'P002', 'category' => 'CPU', 'name' => 'AMD Ryzen 7 7800X3D', 'stock' => 8, 'price' => 359.00, 'warehouse' => 'Warehouse B'],
             ['id' => 'P003', 'category' => 'GPU', 'name' => 'NVIDIA RTX 4070 Ti', 'stock' => 5, 'price' => 799.99, 'warehouse' => 'Warehouse C'],
@@ -59,7 +58,21 @@ class InventorySystemSeeder extends Seeder
             ['id' => 'P020', 'category' => 'Power Supply', 'name' => 'Thermaltake Smart 600W', 'stock' => 15, 'price' => 49.99, 'warehouse' => 'Warehouse B']
         ];
 
-        foreach ($items as $item) { InventoryItem::create($item); }
+        foreach ($items as $item) {
+            // Map 'stock' to 'qty' for the new unified schema
+            $item['qty'] = $item['stock'];
+            unset($item['stock']);
+
+            $item['minLimit'] = $item['minLimit'] ?? max(5, (int) round($item['qty'] * 0.6));
+            $item['maxLimit'] = $item['maxLimit'] ?? max($item['minLimit'] + 10, (int) round($item['qty'] * 2.5) + 10);
+            $item['auto_reorder'] = $item['auto_reorder'] ?? false;
+            
+            // This is the fix to stop the duplication crash
+            Item::updateOrCreate(
+                ['id' => $item['id']],
+                $item
+            );
+        }
 
         // Restoring Original System Logs
         $logs = [
@@ -93,5 +106,7 @@ class InventorySystemSeeder extends Seeder
             ['op' => 'admin1', 'stream' => 'Inspection', 'info' => 'Noctua NH-D15 Cooler (Source: Customer)', 'outcome' => 'Approved: Quarantined', 'statusType' => 'danger', 'created_at' => '2026-07-11 08:15:00']
         ];
         foreach ($audits as $audit) { ReturnsAuditLog::create($audit); }
+
+        \Illuminate\Support\Facades\Artisan::call('stock:check-levels');
     }
 }

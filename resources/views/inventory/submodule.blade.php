@@ -50,28 +50,65 @@
             </div>
             
             <!-- Sidebar Navigation Links -->
+            @php
+                // Get current route name
+                $currentRoute = request()->route()->getName();
+                // Get the requested tab from the URL, defaulting to 'dashboard'
+                $currentTab = request()->query('tab', 'dashboard'); 
+                
+                // Define your active and inactive tailwind classes
+                $activeClass = 'font-bold text-white bg-white/10 border-l-4 border-[#10B981] rounded-r-lg';
+                $inactiveClass = 'font-semibold text-blue-100 border-l-4 border-transparent hover:text-white hover:bg-white/10 rounded-lg';
+            @endphp
+
             <nav class="p-4 flex flex-col gap-1.5 overflow-y-auto flex-1">
-                <a href="#" onclick="routeTo('dashboard')" id="nav-dashboard" class="nav-item px-4 py-2.5 text-xs font-bold text-white bg-white/10 border-l-4 border-emeraldGreen rounded-r-lg transition-all">
+                
+                <!-- Dashboard -->
+                <a href="{{ route('inventory.dashboard', ['tab' => 'dashboard']) }}" 
+                onclick="if(typeof handleJsNav === 'function') handleJsNav(event, 'dashboard')" id="nav-dashboard" 
+                class="nav-item px-4 py-2.5 text-xs transition-all {{ $currentRoute === 'inventory.dashboard' && $currentTab === 'dashboard' ? $activeClass : $inactiveClass }}">
                     Dashboard
                 </a>
-                <a href="#" onclick="alert('Module in development')" class="px-4 py-2.5 text-xs font-semibold text-blue-100 rounded-lg hover:text-white hover:bg-white/10 transition-all">
+                
+                <!-- Inventory Items -->
+                <a href="{{ route('inventory.index') }}" 
+                class="nav-item px-4 py-2.5 text-xs transition-all {{ $currentRoute === 'inventory.index' ? $activeClass : $inactiveClass }}">
                     Inventory Items
                 </a>
-                <a href="#" onclick="alert('Module in development')" class="px-4 py-2.5 text-xs font-semibold text-blue-100 rounded-lg hover:text-white hover:bg-white/10 transition-all">
+                
+                <!-- Stock Movements -->
+                <a href="{{ route('stock-movements.index') }}" 
+                class="nav-item px-4 py-2.5 text-xs transition-all {{ $currentRoute === 'stock-movements.index' ? $activeClass : $inactiveClass }}">
                     Stock Movements
                 </a>
-                <a href="#" onclick="alert('Module in development')" class="px-4 py-2.5 text-xs font-semibold text-blue-100 rounded-lg hover:text-white hover:bg-white/10 transition-all">
+                
+                <!-- Warehouse Layout -->
+                <a href="{{ route('warehouse.layout') }}" 
+                class="nav-item px-4 py-2.5 text-xs transition-all {{ $currentRoute === 'warehouse.layout' ? $activeClass : $inactiveClass }}">
                     Warehouse Layout
                 </a>
-                <a href="#" onclick="alert('Module in development')" class="px-4 py-2.5 text-xs font-semibold text-blue-100 rounded-lg hover:text-white hover:bg-white/10 transition-all">
-                    Alerts & Reorders
+                
+                <!-- Alerts & Reorders (now its own page) -->
+                <a href="{{ route('inventory.alerts') }}" id="nav-alerts" 
+                class="nav-item px-4 py-2.5 text-xs transition-all flex items-center justify-between {{ $inactiveClass }}">
+                    <span>Alerts & Reorders</span>
+                    <span id="nav-alerts-badge" class="hidden ml-2 bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full leading-none"></span>
                 </a>
-                <a href="#" onclick="routeTo('returns')" id="nav-returns" class="nav-item px-4 py-2.5 text-xs font-semibold text-blue-100 rounded-lg hover:text-white hover:bg-white/10 transition-all border-l-4 border-transparent">
+                
+                <!-- Returns & QC -->
+                <a href="{{ route('inventory.dashboard', ['tab' => 'returns']) }}" 
+                onclick="if(typeof handleJsNav === 'function') handleJsNav(event, 'returns')" id="nav-returns" 
+                class="nav-item px-4 py-2.5 text-xs transition-all {{ $currentRoute === 'inventory.dashboard' && $currentTab === 'returns' ? $activeClass : $inactiveClass }}">
                     Returns & QC
                 </a>
-                <a href="#" onclick="routeTo('bundling')" id="nav-bundling" class="nav-item px-4 py-2.5 text-xs font-semibold text-blue-100 rounded-lg hover:text-white hover:bg-white/10 transition-all border-l-4 border-transparent">
+                
+                <!-- Product Bundling -->
+                <a href="{{ route('inventory.dashboard', ['tab' => 'bundling']) }}" 
+                onclick="if(typeof handleJsNav === 'function') handleJsNav(event, 'bundling')" id="nav-bundling" 
+                class="nav-item px-4 py-2.5 text-xs transition-all {{ $currentRoute === 'inventory.dashboard' && $currentTab === 'bundling' ? $activeClass : $inactiveClass }}">
                     Product Bundling
                 </a>
+                
             </nav>
         </div>
 
@@ -121,20 +158,8 @@
                     </div>
                 </div>
 
-                <div class="w-full flex items-center justify-center relative min-h-[160px] bg-gray-50/50 rounded-lg p-2 border border-gray-100">
-                    <svg viewBox="0 0 500 160" class="w-full h-full">
-                        <line x1="20" y1="20" x2="480" y2="20" class="chart-grid-line" />
-                        <line x1="20" y1="70" x2="480" y2="70" class="chart-grid-line" />
-                        <line x1="20" y1="120" x2="480" y2="120" class="chart-grid-line" />
-                        <path d="M 40,110 L 120,60 L 200,90 L 280,30 L 360,80 L 460,25" class="chart-line-in" />
-                        <path d="M 40,130 L 120,90 L 200,70 L 280,50 L 360,35 L 460,45" class="chart-line-out" />
-                        <text x="40" y="145" fill="#9ca3af" font-size="9" text-anchor="middle">Wk 1</text>
-                        <text x="120" y="145" fill="#9ca3af" font-size="9" text-anchor="middle">Wk 2</text>
-                        <text x="200" y="145" fill="#9ca3af" font-size="9" text-anchor="middle">Wk 3</text>
-                        <text x="280" y="145" fill="#9ca3af" font-size="9" text-anchor="middle">Wk 4</text>
-                        <text x="360" y="145" fill="#9ca3af" font-size="9" text-anchor="middle">Wk 5</text>
-                        <text x="460" y="145" fill="#9ca3af" font-size="9" text-anchor="middle">Wk 6</text>
-                    </svg>
+                <div class="w-full relative min-h-[220px] bg-gray-50/50 rounded-lg p-2 border border-gray-100">
+                    <canvas id="dashFlowChart"></canvas>
                 </div>
             </div>
 
@@ -153,19 +178,8 @@
                         </div>
                     </div>
                     
-                    <div class="flex flex-col sm:flex-row items-center justify-center gap-6 py-4">
-                        <svg class="w-32 h-32 transform -rotate-90 rounded-full border border-gray-100" viewBox="0 0 32 32">
-                            <circle cx="16" cy="16" r="16" fill="transparent" stroke="#1E3A8A" stroke-width="32" stroke-dasharray="35 100" />
-                            <circle cx="16" cy="16" r="16" fill="transparent" stroke="#10B981" stroke-width="32" stroke-dasharray="25 100" stroke-dashoffset="-35" />
-                            <circle cx="16" cy="16" r="16" fill="transparent" stroke="#F59E0B" stroke-width="32" stroke-dasharray="20 100" stroke-dashoffset="-60" />
-                            <circle cx="16" cy="16" r="16" fill="transparent" stroke="#EF4444" stroke-width="32" stroke-dasharray="20 100" stroke-dashoffset="-80" />
-                        </svg>
-                        <div class="grid grid-cols-2 gap-x-4 gap-y-1.5 text-xs font-medium text-gray-600">
-                            <div class="flex items-center gap-1.5"><span class="w-3 h-3 bg-navyBlue rounded-xs inline-block"></span> CPUs (35%)</div>
-                            <div class="flex items-center gap-1.5"><span class="w-3 h-3 bg-emeraldGreen rounded-xs inline-block"></span> GPUs (25%)</div>
-                            <div class="flex items-center gap-1.5"><span class="w-3 h-3 bg-amber-500 rounded-xs inline-block"></span> RAM (20%)</div>
-                            <div class="flex items-center gap-1.5"><span class="w-3 h-3 bg-red-500 rounded-xs inline-block"></span> Storage (20%)</div>
-                        </div>
+                    <div class="relative h-48 w-full py-2">
+                        <canvas id="dashCategoryChart"></canvas>
                     </div>
                 </div>
 
@@ -182,17 +196,8 @@
                         </div>
                     </div>
 
-                    <div class="flex flex-col sm:flex-row items-center justify-center gap-6 py-4">
-                        <svg class="w-32 h-32 transform -rotate-90 rounded-full border border-gray-100" viewBox="0 0 32 32">
-                            <circle cx="16" cy="16" r="16" fill="transparent" stroke="#1E3A8A" stroke-width="32" stroke-dasharray="50 100" />
-                            <circle cx="16" cy="16" r="16" fill="transparent" stroke="#10B981" stroke-width="32" stroke-dasharray="30 100" stroke-dashoffset="-50" />
-                            <circle cx="16" cy="16" r="16" fill="transparent" stroke="#6B7280" stroke-width="32" stroke-dasharray="20 100" stroke-dashoffset="-80" />
-                        </svg>
-                        <div class="grid grid-cols-1 gap-y-1.5 text-xs font-medium text-gray-600">
-                            <div class="flex items-center gap-1.5"><span class="w-3 h-3 bg-navyBlue rounded-xs inline-block"></span> Warehouse A - Main Hub (50%)</div>
-                            <div class="flex items-center gap-1.5"><span class="w-3 h-3 bg-emeraldGreen rounded-xs inline-block"></span> Warehouse B - Logistics (30%)</div>
-                            <div class="flex items-center gap-1.5"><span class="w-3 h-3 bg-gray-500 rounded-xs inline-block"></span> Warehouse C - Overflow (20%)</div>
-                        </div>
+                    <div class="relative h-48 w-full py-2">
+                        <canvas id="dashWarehouseChart"></canvas>
                     </div>
                 </div>
             </div>
@@ -248,6 +253,14 @@
                             </div>
                             <span class="text-red-500 font-bold text-3xl">🚨</span>
                         </div>
+
+                        <div class="cursor-pointer bg-blue-50 hover:bg-blue-100 border border-blue-200 p-5 rounded-xl flex items-center justify-between transition-colors shadow-sm">
+                            <div>
+                                <div id="dash-alert-over" class="text-2xl font-bold text-blue-700">0</div>
+                                <div class="text-xs text-blue-600 font-bold uppercase tracking-wide mt-1">Overstock Items</div>
+                            </div>
+                            <span class="text-blue-500 font-bold text-3xl">📦</span>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -266,7 +279,7 @@
                             <h4 class="text-base font-bold text-gray-800 mt-1">Inventory Items</h4>
                             <p class="text-xs text-gray-500 mt-2 leading-relaxed">Add new products, update pricing models, and monitor catalog listings.</p>
                         </div>
-                        <button onclick="alert('Module in development')" class="mt-5 w-full text-center bg-white border border-gray-300 hover:border-navyBlue hover:text-navyBlue text-gray-700 text-xs font-bold py-2.5 rounded-lg transition-colors shadow-sm">
+                        <button onclick="window.location.href='{{ route('inventory.index') }}'" class="mt-5 w-full text-center bg-white border border-gray-300 hover:border-navyBlue hover:text-navyBlue text-gray-700 text-xs font-bold py-2.5 rounded-lg transition-colors shadow-sm">
                             Open Catalog &rarr;
                         </button>
                     </div>
@@ -277,7 +290,7 @@
                             <h4 class="text-base font-bold text-gray-800 mt-1">Stock Movements</h4>
                             <p class="text-xs text-gray-500 mt-2 leading-relaxed">Record inbound deliveries, process shipments, and manage internal transfers.</p>
                         </div>
-                        <button onclick="alert('Module in development')" class="mt-5 w-full text-center bg-white border border-gray-300 hover:border-emeraldGreen hover:text-emeraldGreen text-gray-700 text-xs font-bold py-2.5 rounded-lg transition-colors shadow-sm">
+                        <button onclick="window.location.href='{{ route('stock-movements.index') }}'" class="mt-5 w-full text-center bg-white border border-gray-300 hover:border-emeraldGreen hover:text-emeraldGreen text-gray-700 text-xs font-bold py-2.5 rounded-lg transition-colors shadow-sm">
                             Track Movements &rarr;
                         </button>
                     </div>
@@ -288,7 +301,7 @@
                             <h4 class="text-base font-bold text-gray-800 mt-1">Warehouse Layout</h4>
                             <p class="text-xs text-gray-500 mt-2 leading-relaxed">Locate items on the floorplan map and optimize physical storage space zones.</p>
                         </div>
-                        <button onclick="alert('Module in development')" class="mt-5 w-full text-center bg-white border border-gray-300 hover:border-navyBlue hover:text-navyBlue text-gray-700 text-xs font-bold py-2.5 rounded-lg transition-colors shadow-sm">
+                        <button onclick="window.location.href='{{ route('warehouse.layout') }}'" class="mt-5 w-full text-center bg-white border border-gray-300 hover:border-navyBlue hover:text-navyBlue text-gray-700 text-xs font-bold py-2.5 rounded-lg transition-colors shadow-sm">
                             View Floorplans &rarr;
                         </button>
                     </div>
@@ -299,7 +312,7 @@
                             <h4 class="text-base font-bold text-gray-800 mt-1">Alerts & Reorders</h4>
                             <p class="text-xs text-gray-500 mt-2 leading-relaxed">Review critical low-stock metrics and generate automated vendor purchase orders.</p>
                         </div>
-                        <button onclick="alert('Module in development')" class="mt-5 w-full text-center bg-white border border-gray-300 hover:border-amber-600 hover:text-amber-700 text-gray-700 text-xs font-bold py-2.5 rounded-lg transition-colors shadow-sm">
+                        <button onclick="window.location.href='{{ route('inventory.alerts') }}'" class="mt-5 w-full text-center bg-white border border-gray-300 hover:border-amber-600 hover:text-amber-700 text-gray-700 text-xs font-bold py-2.5 rounded-lg transition-colors shadow-sm">
                             Manage Orders &rarr;
                         </button>
                     </div>
@@ -310,7 +323,7 @@
                             <h4 class="text-base font-bold text-gray-800 mt-1">Returns & QC Hub</h4>
                             <p class="text-xs text-gray-500 mt-2 leading-relaxed">Handle customer return requests (RMAs) and verify defective parts testing.</p>
                         </div>
-                        <button onclick="routeTo('returns')" class="mt-5 w-full text-center bg-white border border-gray-300 hover:border-emeraldGreen hover:text-emeraldGreen text-gray-700 text-xs font-bold py-2.5 rounded-lg transition-colors shadow-sm">
+                        <button onclick="handleJsNav(event, 'returns')" class="mt-5 w-full text-center bg-white border border-gray-300 hover:border-emeraldGreen hover:text-emeraldGreen text-gray-700 text-xs font-bold py-2.5 rounded-lg transition-colors shadow-sm">
                             Process Returns &rarr;
                         </button>
                     </div>
@@ -321,7 +334,7 @@
                             <h4 class="text-base font-bold text-gray-800 mt-1">Product Bundling</h4>
                             <p class="text-xs text-gray-500 mt-2 leading-relaxed">Combine individual components into complete PC builds or promotional sets.</p>
                         </div>
-                        <button onclick="routeTo('bundling')" class="mt-5 w-full text-center bg-white border border-gray-300 hover:border-navyBlue hover:text-navyBlue text-gray-700 text-xs font-bold py-2.5 rounded-lg transition-colors shadow-sm">
+                        <button onclick="handleJsNav(event, 'bundling')" class="mt-5 w-full text-center bg-white border border-gray-300 hover:border-navyBlue hover:text-navyBlue text-gray-700 text-xs font-bold py-2.5 rounded-lg transition-colors shadow-sm">
                             Configure Bundles &rarr;
                         </button>
                     </div>
@@ -718,7 +731,8 @@
             </div>
         </section>
 
-    </div>
+        <!-- ========================================== -->
+        {{-- Alerts & Reorders moved to its own page: resources/views/inventory/alerts-page.blade.php --}}
 
     <!-- ========================================== -->
     <!-- GLOBAL MODALS OVERLAYS                     -->
@@ -846,21 +860,180 @@
         renderReturnsPendingInspections();
         renderReturnsPendingRMAs();
         renderReturnsAuditLog();
+        
+        // Add this line right here:
+        if (typeof updateReturnsChart === 'function') updateReturnsChart();
+
+        renderDashboardCharts(); // <--- ADD THIS LINE HERE
+        
         renderBundlingTable();
         renderBundlingCustomBuilder();
         renderBundlingPresets();
         renderBundlingApprovalTable();
         renderBundlingAuditTable();
+        renderNavAlertsBadge();
+    }
+
+    // Lights up a red count badge on the "Alerts & Reorders" nav item whenever
+    // there's a low/out-of-stock item, so it's visible from anywhere in the
+    // app, not just on the Alerts & Reorders page itself. Now that Alerts &
+    // Reorders is its own page with its own appState, this dashboard page uses
+    // the same lightweight /inventory/api/alerts-summary endpoint the other
+    // standalone pages (Inventory Items, Stock Movements, Warehouse Layout)
+    // already use, instead of computing it from a local appState.inventory
+    // copy that could go stale.
+    function renderNavAlertsBadge() {
+        const badge = document.getElementById('nav-alerts-badge');
+        if (!badge) return;
+        fetch('{{ route("alerts.summary") }}')
+            .then(res => res.json())
+            .then(data => {
+                if (!data.count) {
+                    badge.classList.add('hidden');
+                    badge.textContent = '';
+                    return;
+                }
+                badge.textContent = data.count;
+                badge.classList.remove('hidden');
+                badge.classList.toggle('bg-red-500', data.hasCritical);
+                badge.classList.toggle('bg-amber-500', !data.hasCritical);
+            })
+            .catch(() => {});
     }
 
     // ==========================================
     // DASHBOARD LOGIC
     // ==========================================
+    let dashCatChart = null;
+    let dashWhChart = null;
+    let dashFlowChart = null;
+
+    function renderDashboardCharts() {
+        const inventory = appState.inventory || [];
+        
+        // 1. Tally up Categories
+        const catData = {};
+        // 2. Tally up Warehouses (Default to 'Main Hub' if undefined)
+        const whData = {};
+
+        inventory.forEach(item => {
+            const qty = parseInt(item.qty) || 0;
+            if (qty > 0) {
+                const cat = item.category || 'Uncategorized';
+                const wh = item.warehouse || 'Main Hub';
+                
+                catData[cat] = (catData[cat] || 0) + qty;
+                whData[wh] = (whData[wh] || 0) + qty;
+            }
+        });
+
+        // --- Category Pie Chart ---
+        if (dashCatChart) dashCatChart.destroy();
+        dashCatChart = new Chart(document.getElementById('dashCategoryChart').getContext('2d'), {
+            type: 'doughnut',
+            data: {
+                labels: Object.keys(catData),
+                datasets: [{
+                    data: Object.values(catData),
+                    backgroundColor: ['#1E3A8A', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#3B82F6'],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: { legend: { position: 'right', labels: { boxWidth: 12, font: { size: 10 } } } },
+                cutout: '60%'
+            }
+        });
+
+        // --- Warehouse Pie Chart ---
+        if (dashWhChart) dashWhChart.destroy();
+        dashWhChart = new Chart(document.getElementById('dashWarehouseChart').getContext('2d'), {
+            type: 'doughnut',
+            data: {
+                labels: Object.keys(whData),
+                datasets: [{
+                    data: Object.values(whData),
+                    backgroundColor: ['#1E3A8A', '#10B981', '#6B7280'],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                plugins: { legend: { position: 'right', labels: { boxWidth: 12, font: { size: 10 } } } },
+                cutout: '60%'
+            }
+        });
+
+        // --- Inventory Flow Chart (Live Data Integration) ---
+        if (dashFlowChart) dashFlowChart.destroy();
+        
+        const dynamicDates = [];
+        const inboundCounts = [0, 0, 0, 0, 0, 0];
+        const outboundCounts = [0, 0, 0, 0, 0, 0];
+        
+        // 1. Generate dates starting from TODAY going forward 5 days (6 days total)
+        for (let i = 0; i <= 5; i++) {
+            const d = new Date();
+            d.setDate(d.getDate() + i);
+            dynamicDates.push(d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
+        }
+
+        // 2. FETCH THE LIVE DATA DIRECTLY FROM THE ENDPOINT
+        fetch("{{ route('stock-movements.data') }}")
+            .then(res => res.json())
+            .then(data => {
+                const movements = data.movements || [];
+                
+                movements.forEach(movement => {
+                    // Only count 'Approved' transactions on the dashboard chart
+                    if (movement.status !== 'Approved') return;
+
+                    const rawDate = movement.date || movement.created_at;
+                    const movementDateStr = new Date(rawDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                    
+                    const dateIndex = dynamicDates.indexOf(movementDateStr);
+                    
+                    if (dateIndex !== -1) {
+                        const type = (movement.type || '').toLowerCase();
+                        const qty = parseInt(movement.qty) || 0;
+
+                        if (type === 'stock-in' || type === 'product return') {
+                            inboundCounts[dateIndex] += qty;
+                        } else if (type === 'stock-out' || type === 'warehouse transfer') {
+                            outboundCounts[dateIndex] += qty;
+                        }
+                    }
+                });
+
+                // 3. Render the chart INSIDE the fetch block so it waits for the data
+                dashFlowChart = new Chart(document.getElementById('dashFlowChart').getContext('2d'), {
+                    type: 'line',
+                    data: {
+                        labels: dynamicDates,
+                        datasets: [
+                            { label: 'Inbound', data: inboundCounts, borderColor: '#1E3A8A', tension: 0.3, borderWidth: 3 },
+                            { label: 'Outbound', data: outboundCounts, borderColor: '#10B981', tension: 0.3, borderWidth: 3 }
+                        ]
+                    },
+                    options: {
+                        responsive: true, maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: { 
+                            y: { display: true, beginAtZero: true, suggestedMax: 10, ticks: { stepSize: 2 } }, 
+                            x: { grid: { display: false } } 
+                        }
+                    }
+                });
+            })
+            .catch(err => console.error("Chart Fetch Error:", err));
+    }
+
     function runDashDirectoryFiltering() {
         const query = document.getElementById('dashDirSearch').value.toLowerCase().trim();
         const cat = document.getElementById('dashDirCategory').value;
-        const filtered = appState.inventory.filter(item => {
-            const ms = item.name.toLowerCase().includes(query) || item.id.toLowerCase().includes(query);
+        const filtered = (appState.inventory || []).filter(item => {
+            const ms = (item.name || '').toLowerCase().includes(query) || (item.id || '').toLowerCase().includes(query);
             const mc = (cat === "All") || (item.category === cat);
             return ms && mc;
         });
@@ -874,23 +1047,26 @@
         }
         
         filtered.forEach(item => {
-            let badge = item.stock === 0 
+            // FIX: Point to item.qty instead of item.stock
+            const qty = parseInt(item.qty) || 0;
+            
+            let badge = qty === 0 
                 ? `<span class="bg-red-50 text-red-700 border border-red-100 px-2 py-1 rounded-md text-[10px] font-bold">Out of Stock</span>` 
-                : (item.stock <= 5 
+                : (qty <= 5 
                     ? `<span class="bg-amber-50 text-amber-700 border border-amber-100 px-2 py-1 rounded-md text-[10px] font-bold">Low Stock</span>` 
                     : `<span class="bg-emerald-50 text-emerald-700 border border-emerald-100 px-2 py-1 rounded-md text-[10px] font-bold">Healthy Stock</span>`);
             
-            let sc = item.stock === 0 ? 'text-red-600' : (item.stock <= 5 ? 'text-amber-600' : 'text-gray-700');
+            let sc = qty === 0 ? 'text-red-600' : (qty <= 5 ? 'text-amber-600' : 'text-gray-700');
             
-            tbody.innerHTML += `
+            tbody.insertAdjacentHTML('beforeend', `
                 <tr class="hover:bg-gray-50/80 transition-colors border-b border-gray-50">
                     <td class="p-3.5 font-bold font-mono text-gray-400">${item.id}</td>
                     <td class="p-3.5 font-semibold text-gray-900">${item.name}</td>
                     <td class="p-3.5"><span class="bg-gray-100 text-gray-600 px-2 py-1 rounded font-bold text-[10px]">${item.category}</span></td>
-                    <td class="p-3.5 text-right font-bold ${sc}">${item.stock}</td>
-                    <td class="p-3.5 text-right font-semibold text-gray-500">$${parseFloat(item.price).toFixed(2)}</td>
+                    <td class="p-3.5 text-right font-bold ${sc}">${qty}</td>
+                    <td class="p-3.5 text-right font-semibold text-gray-500">$${parseFloat(item.price || 0).toFixed(2)}</td>
                     <td class="p-3.5 text-center">${badge}</td>
-                </tr>`;
+                </tr>`);
         });
     }
 
@@ -909,13 +1085,23 @@
     }
 
     function updateDashCalculatedGauges() {
-        let low = 0, out = 0;
-        appState.inventory.forEach(item => { 
-            if (item.stock === 0) out++; 
-            else if (item.stock <= 5) low++; 
+        // Mirrors alertsRenderCards() in the Alerts & Reorders module: computed
+        // live from each item's qty vs its own minLimit/maxLimit, so this
+        // widget always matches Alerts & Reorders. (Not sourced from the
+        // stockAlerts table, since that only refreshes when the
+        // stock:check-levels command runs and can be stale/empty.)
+        let low = 0, out = 0, over = 0;
+        (appState.inventory || []).forEach(item => {
+            const qty = parseInt(item.qty) || 0;
+            const min = parseInt(item.minLimit) || 0;
+            const max = parseInt(item.maxLimit) || 0;
+            if (qty === 0) out++;
+            else if (min > 0 && qty < min) low++;
+            else if (max > 0 && qty > max) over++;
         });
         document.getElementById('dash-alert-low').innerText = low; 
         document.getElementById('dash-alert-out').innerText = out;
+        document.getElementById('dash-alert-over').innerText = over;
     }
 
     window.expandDashboardPanel = function(panelType) {
@@ -924,46 +1110,142 @@
         const content = document.getElementById('dashModalDisplayContent');
         content.innerHTML = '';
         
+        const inventory = appState.inventory || [];
+        
         if(panelType === 'flowGraph') {
             title.innerText = "Inventory Flow Analysis";
-            content.innerHTML = `
-                <div class="space-y-4">
-                    <p class="text-gray-500 leading-relaxed">The warehouse asset efficiency calculations show steady inbound deliveries matching outbound fulfillment over the past 6 weeks:</p>
-                    <div class="bg-white border rounded-lg p-4">
-                        <h4 class="font-bold text-gray-800 mb-2 uppercase text-[10px] tracking-wide">Weekly Ledger Details</h4>
-                        <div class="space-y-2 text-gray-600 font-medium">
-                            <div class="flex justify-between border-b pb-2 text-gray-400 text-[10px] uppercase"><span>Week</span> <span>Units Inbound</span> <span>Units Outbound</span></div>
-                            <div class="flex justify-between border-b pb-1.5"><span>Week 1</span> <span class="text-navyBlue font-bold">140 Units</span> <span class="text-emeraldGreen font-bold">110 Units</span></div>
-                            <div class="flex justify-between border-b pb-1.5"><span>Week 2</span> <span class="text-navyBlue font-bold">195 Units</span> <span class="text-emeraldGreen font-bold">150 Units</span></div>
-                            <div class="flex justify-between border-b pb-1.5"><span>Week 3</span> <span class="text-navyBlue font-bold">220 Units</span> <span class="text-emeraldGreen font-bold">185 Units</span></div>
-                            <div class="flex justify-between pb-1.5"><span>Week 4</span> <span class="text-navyBlue font-bold">310 Units</span> <span class="text-emeraldGreen font-bold">290 Units</span></div>
-                        </div>
-                    </div>
-                </div>`;
-        } else if(panelType === 'categories') {
-            title.innerText = "Category Distribution Analysis";
-            content.innerHTML = `
-                <div class="space-y-3">
-                    <p class="text-gray-500 leading-relaxed">Breakdown of inventory by hardware categories:</p>
-                    <div class="bg-white border rounded-lg p-4 divide-y divide-gray-100 font-medium">
-                        <div class="flex justify-between py-2.5"><span>CPUs (Processors)</span><span class="font-bold text-navyBlue">35%</span></div>
-                        <div class="flex justify-between py-2.5"><span>GPUs (Graphics Cards)</span><span class="font-bold text-navyBlue">25%</span></div>
-                        <div class="flex justify-between py-2.5"><span>RAM (Memory)</span><span class="font-bold text-navyBlue">20%</span></div>
-                        <div class="flex justify-between py-2.5"><span>Storage (SSD/HDD)</span><span class="font-bold text-navyBlue">20%</span></div>
-                    </div>
-                </div>`;
+            
+            // Generate the exact same forward-facing dates as the line chart
+            const dynamicDates = [];
+            const inboundCounts = [0, 0, 0, 0, 0, 0];
+            const outboundCounts = [0, 0, 0, 0, 0, 0];
+            
+            for (let i = 0; i <= 5; i++) {
+                const d = new Date();
+                d.setDate(d.getDate() + i);
+                dynamicDates.push(d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
+            }
+
+            // Set a temporary loading state while we fetch the live data
+            content.innerHTML = `<div class="p-4 text-center text-gray-500 font-medium">Loading ledger data...</div>`;
+
+            fetch("{{ route('stock-movements.data') }}")
+                .then(res => res.json())
+                .then(data => {
+                    const movements = data.movements || [];
+                    
+                    movements.forEach(movement => {
+                        if (movement.status !== 'Approved') return;
+
+                        const rawDate = movement.date || movement.created_at;
+                        const movementDateStr = new Date(rawDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                        const dateIndex = dynamicDates.indexOf(movementDateStr);
+                        
+                        if (dateIndex !== -1) {
+                            const type = (movement.type || '').toLowerCase();
+                            const qty = parseInt(movement.qty) || 0;
+
+                            if (type === 'stock-in' || type === 'product return') {
+                                inboundCounts[dateIndex] += qty;
+                            } else if (type === 'stock-out' || type === 'warehouse transfer') {
+                                outboundCounts[dateIndex] += qty;
+                            }
+                        }
+                    });
+
+                    // Build the HTML rows using the live arrays we just populated
+                    let rowsHtml = '';
+                    dynamicDates.forEach((dateStr, index) => {
+                        rowsHtml += `<div class="flex justify-between border-b border-gray-100 pb-1.5 pt-1.5 last:border-0 last:pb-0">
+                            <span>${dateStr}</span> 
+                            <span class="text-navyBlue font-bold">${inboundCounts[index]} Units</span> 
+                            <span class="text-emeraldGreen font-bold">${outboundCounts[index]} Units</span>
+                        </div>`;
+                    });
+
+                    // Inject the final HTML into the modal
+                    content.innerHTML = `
+                        <div class="space-y-4">
+                            <p class="text-gray-500 leading-relaxed">The warehouse asset efficiency calculations show inbound deliveries and outbound fulfillment over the next 6 days:</p>
+                            <div class="bg-white border rounded-lg p-4">
+                                <h4 class="font-bold text-gray-800 mb-2 uppercase text-[10px] tracking-wide">Daily Ledger Details</h4>
+                                <div class="space-y-2 text-gray-600 font-medium">
+                                    <div class="flex justify-between border-b pb-2 text-gray-400 text-[10px] uppercase"><span>Date</span> <span>Units Inbound</span> <span>Units Outbound</span></div>
+                                    ${rowsHtml}
+                                </div>
+                            </div>
+                        </div>`;
+                })
+                .catch(err => console.error("Modal Fetch Error:", err));
+
         } else if(panelType === 'warehouses') {
-            title.innerText = "Storage Placement Overview";
+            title.innerText = "Category Distribution Analysis";
+            
+            // Calculate live category stats based on qty
+            const catData = {};
+            let total = 0;
+            inventory.forEach(item => {
+                const qty = parseInt(item.qty) || 0;
+                if (qty > 0) {
+                    const cat = item.category || 'Uncategorized';
+                    catData[cat] = (catData[cat] || 0) + qty;
+                    total += qty;
+                }
+            });
+            
+            let rowsHtml = '';
+            if (total === 0) {
+                rowsHtml = `<div class="py-2.5 text-gray-400 text-center">No stock available</div>`;
+            } else {
+                Object.entries(catData).sort((a, b) => b[1] - a[1]).forEach(([cat, qty]) => {
+                    const pct = ((qty / total) * 100).toFixed(1);
+                    rowsHtml += `<div class="flex justify-between py-2.5 border-b border-gray-100 last:border-0"><span>${cat}</span><span class="font-bold text-navyBlue">${pct}% (${qty} units)</span></div>`;
+                });
+            }
+
             content.innerHTML = `
                 <div class="space-y-3">
-                    <p class="text-gray-500 leading-relaxed">Breakdown of component placements per storage facility:</p>
-                    <div class="bg-white border rounded-lg p-4 divide-y divide-gray-100 font-medium">
-                        <div class="flex justify-between py-2.5"><span>Warehouse A (Main Hub)</span><span class="font-bold text-emeraldGreen">50% Placement Volume</span></div>
-                        <div class="flex justify-between py-2.5"><span>Warehouse B (Logistics)</span><span class="font-bold text-emeraldGreen">30% Placement Volume</span></div>
-                        <div class="flex justify-between py-2.5"><span>Warehouse C (Overflow)</span><span class="font-bold text-emeraldGreen">20% Placement Volume</span></div>
+                    <p class="text-gray-500 leading-relaxed">Live breakdown of inventory by hardware categories:</p>
+                    <div class="bg-white border rounded-lg p-4 font-medium">
+                        ${rowsHtml}
                     </div>
                 </div>`;
+
+        } else if(panelType === 'categories') {
+            title.innerText = "Storage Placement Overview";
+            
+            // Calculate live warehouse stats based on qty
+            const whData = {};
+            let total = 0;
+            inventory.forEach(item => {
+                const qty = parseInt(item.qty) || 0;
+                if (qty > 0) {
+                    const wh = item.warehouse || 'Main Hub';
+                    whData[wh] = (whData[wh] || 0) + qty;
+                    total += qty;
+                }
+            });
+
+            let rowsHtml = '';
+            if (total === 0) {
+                rowsHtml = `<div class="py-2.5 text-gray-400 text-center">No stock available</div>`;
+            } else {
+                Object.entries(whData).sort((a, b) => b[1] - a[1]).forEach(([wh, qty]) => {
+                    const pct = ((qty / total) * 100).toFixed(1);
+                    rowsHtml += `<div class="flex justify-between py-2.5 border-b border-gray-100 last:border-0"><span>${wh}</span><span class="font-bold text-emeraldGreen">${pct}% (${qty} units)</span></div>`;
+                });
+            }
+
+            content.innerHTML = `
+                <div class="space-y-3">
+                    <p class="text-gray-500 leading-relaxed">Live breakdown of component placements per storage facility:</p>
+                    <div class="bg-white border rounded-lg p-4 font-medium">
+                        ${rowsHtml}
+                    </div>
+                </div>`;
+
         } else if(panelType === 'systemLogs') {
+            // (System logs were already pulling from the live DB, so this part stays the same)
             title.innerText = "System Log Audit Archive";
             let logsHtml = `
                 <div class="bg-white border rounded-lg overflow-hidden">
@@ -972,7 +1254,7 @@
                     </div>
                     <div class="divide-y divide-gray-100">`;
             
-            appState.systemLogs.forEach(log => {
+            (appState.systemLogs || []).forEach(log => {
                 logsHtml += `
                     <div class="p-3 grid grid-cols-5 items-center font-medium text-gray-700 hover:bg-gray-50">
                         <span class="font-bold text-navyBlue">${log.user}</span>
@@ -983,6 +1265,7 @@
             logsHtml += `</div></div>`;
             content.innerHTML = logsHtml;
         }
+        
         modal.classList.remove('hidden'); 
         modal.classList.add('flex');
     }
@@ -995,15 +1278,19 @@
     // ==========================================
     // RETURNS & QC LOGIC
     // ==========================================
+    let returnsChartInstance = null;
+
     function initReturnsChart() {
         const ctx = document.getElementById('returnsChart').getContext('2d');
-        new Chart(ctx, {
+        
+        // Setup empty chart shell
+        returnsChartInstance = new Chart(ctx, {
             type: 'bar',
             data: {
-                labels: ['February', 'March', 'April', 'May', 'June', 'July'],
+                labels: [], 
                 datasets: [
-                    { label: 'Internal Inspections', data: [45, 52, 38, 65, 48, 59], backgroundColor: '#1E3A8A', borderRadius: 4 },
-                    { label: 'Manufacturer Returns (RMA)', data: [12, 18, 14, 22, 16, 25], backgroundColor: '#10B981', borderRadius: 4 }
+                    { label: 'Internal Inspections', data: [], backgroundColor: '#1E3A8A', borderRadius: 4 },
+                    { label: 'Manufacturer Returns (RMA)', data: [], backgroundColor: '#10B981', borderRadius: 4 }
                 ]
             },
             options: {
@@ -1015,6 +1302,43 @@
                 }
             }
         });
+        
+        updateReturnsChart();
+    }
+
+    // New function to calculate dynamic data from Audit Logs
+    function updateReturnsChart() {
+        if (!returnsChartInstance) return;
+        
+        const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+        const labels = [];
+        const insData = [0, 0, 0, 0, 0, 0];
+        const rmaData = [0, 0, 0, 0, 0, 0];
+        
+        // Generate the last 6 months based on the current date
+        const d = new Date();
+        for (let i = 5; i >= 0; i--) {
+            const pastDate = new Date(d.getFullYear(), d.getMonth() - i, 1);
+            labels.push(monthNames[pastDate.getMonth()]);
+        }
+
+        // Tally data from the audit log
+        (appState.returnsAudit || []).forEach(log => {
+            const logDate = new Date(log.time);
+            const diffMonths = (d.getFullYear() - logDate.getFullYear()) * 12 + d.getMonth() - logDate.getMonth();
+            
+            if (diffMonths >= 0 && diffMonths <= 5) {
+                const index = 5 - diffMonths;
+                if (log.stream === 'Inspection') insData[index]++;
+                if (log.stream === 'RMA') rmaData[index]++;
+            }
+        });
+
+        // Apply data and re-render
+        returnsChartInstance.data.labels = labels;
+        returnsChartInstance.data.datasets[0].data = insData;
+        returnsChartInstance.data.datasets[1].data = rmaData;
+        returnsChartInstance.update();
     }
 
     function renderReturnsDropdowns() {
@@ -1183,13 +1507,14 @@
         }
         
         filtered.forEach(item => {
-            const sc = item.stock <= 0 ? 'text-red-500 font-bold' : 'text-gray-700 font-medium';
+            // FIX: Point to item.qty
+            const sc = item.qty <= 0 ? 'text-red-500 font-bold' : 'text-gray-700 font-medium';
             tbody.insertAdjacentHTML('beforeend', `
                 <tr class="hover:bg-gray-50 border-b border-gray-100 transition-colors">
                     <td class="py-3 px-4 font-mono text-xs text-navyBlue">${item.id}</td>
                     <td class="py-3 px-4"><span class="bg-gray-100 text-gray-600 px-2 py-1 rounded text-xs">${item.category}</span></td>
                     <td class="py-3 px-4 font-medium text-gray-800">${item.name}</td>
-                    <td class="py-3 px-4 text-right ${sc}">${item.stock}</td>
+                    <td class="py-3 px-4 text-right ${sc}">${item.qty}</td>
                 </tr>`);
         });
     }
@@ -1197,19 +1522,48 @@
     function renderBundlingCustomBuilder() {
         const container = document.getElementById('customSelectsContainer'); 
         const currentSelections = {};
-        document.querySelectorAll('.custom-part-select').forEach(s => { currentSelections[s.dataset.category] = s.value; });
+        
+        // Save current selections to prevent resetting if the page refreshes
+        document.querySelectorAll('.custom-part-select').forEach(s => { 
+            currentSelections[s.dataset.category] = s.value; 
+        });
         
         container.innerHTML = '';
-        ['CPU', 'GPU', 'Motherboard', 'RAM', 'Storage', 'Power Supply', 'Case', 'Cooler'].forEach(cat => {
-            let opts = `<option value="">-- Choose ${cat} --</option>`;
-            appState.inventory.filter(i => i.category === cat && i.stock > 0).forEach(i => {
-                const sel = currentSelections[cat] === i.id ? 'selected' : '';
-                opts += `<option value="${i.id}" ${sel}>${i.name} (Stock: ${i.stock})</option>`;
+        
+        // Map the UI labels (what the user sees) to the actual database categories
+        const categoryMap = [
+            { label: 'CPU', dbValue: 'Processor' },
+            { label: 'GPU', dbValue: 'Graphics Card' },
+            { label: 'Motherboard', dbValue: 'Motherboard' },
+            { label: 'RAM', dbValue: 'Memory' },
+            { label: 'Storage', dbValue: 'Storage' },
+            { label: 'Power Supply', dbValue: 'Power Supply' },
+            { label: 'Case', dbValue: 'Case' }, // Assuming these match your DB
+            { label: 'Cooler', dbValue: 'Cooler' } // Assuming these match your DB
+        ];
+        
+        categoryMap.forEach(mapping => {
+            let opts = `<option value="">-- Choose ${mapping.label} --</option>`;
+            
+            // Filter using the exact database value
+            const availableParts = appState.inventory.filter(i => {
+                const dbCategory = (i.category || '').trim().toLowerCase();
+                const targetCategory = mapping.dbValue.toLowerCase();
+                
+                return dbCategory === targetCategory && i.qty > 0;
             });
+
+            availableParts.forEach(i => {
+                // Keep the selection if it was already chosen
+                const sel = currentSelections[mapping.dbValue] === i.id ? 'selected' : '';
+                opts += `<option value="${i.id}" ${sel}>${i.name} (Stock: ${i.qty})</option>`;
+            });
+            
+            // Note: data-category is set to mapping.dbValue so the Pre-built Package "Customize" button can find it!
             container.insertAdjacentHTML('beforeend', `
                 <div class="flex flex-col">
-                    <label class="text-xs font-bold text-gray-500 uppercase tracking-wide mb-1">${cat}</label>
-                    <select data-category="${cat}" class="custom-part-select border border-gray-300 rounded-md text-sm px-3 py-2 bg-gray-50 focus:border-navyBlue focus:ring-1 focus:ring-navyBlue outline-none">${opts}</select>
+                    <label class="text-xs font-bold text-gray-500 uppercase tracking-wide mb-1">${mapping.label}</label>
+                    <select data-category="${mapping.dbValue}" class="custom-part-select border border-gray-300 rounded-md text-sm px-3 py-2 bg-gray-50 focus:border-navyBlue focus:ring-1 focus:ring-navyBlue outline-none">${opts}</select>
                 </div>`);
         });
     }
@@ -1222,7 +1576,8 @@
             let maxBuild = Infinity;
             p.recipe.forEach(id => {
                 const item = appState.inventory.find(i => i.id === id);
-                if (item && item.stock < maxBuild) maxBuild = item.stock;
+                // FIX: Calculate based on item.qty
+                if (item && item.qty < maxBuild) maxBuild = item.qty;
                 if (!item) maxBuild = 0;
             });
             
@@ -1252,12 +1607,13 @@
         p.recipe.forEach(id => {
             const part = appState.inventory.find(i => i.id === id);
             if (part) {
-                if (part.stock < maxB) maxB = part.stock;
-                const c = part.stock > 0 ? 'text-emeraldGreen' : 'text-red-500';
+                // FIX: Calculate against part.qty
+                if (part.qty < maxB) maxB = part.qty;
+                const c = part.qty > 0 ? 'text-emeraldGreen' : 'text-red-500';
                 document.getElementById('modalPresetPartsList').insertAdjacentHTML('beforeend', `
                     <li class="flex justify-between items-center border-b border-gray-200 border-dashed pb-1 last:border-0 last:pb-0">
                         <span class="text-gray-700"><span class="text-xs font-bold text-gray-400 mr-2">${part.category}</span> ${part.name}</span>
-                        <span class="${c} font-bold text-xs">${part.stock} in stock</span>
+                        <span class="${c} font-bold text-xs">${part.qty} in stock</span>
                     </li>`);
             }
         });
@@ -1304,7 +1660,8 @@
         
         p.recipe.forEach(id => {
             const part = appState.inventory.find(i => i.id === id);
-            if (part && part.stock > 0) {
+            // FIX: Ensure part.qty > 0 before selecting
+            if (part && part.qty > 0) {
                 const sel = document.querySelector(`.custom-part-select[data-category="${part.category}"]`);
                 if (sel) sel.value = id;
             }
@@ -1368,46 +1725,30 @@
         }
         
         appState.bundlePending.forEach(req => {
+            const outOfStockParts = (req.recipe || []).filter(partId => {
+                const part = appState.inventory.find(i => i.id === partId);
+                // FIX: Check against part.qty
+                return !part || part.qty <= 0;
+            });
+            const blocked = outOfStockParts.length > 0;
+
+            const approveBtn = blocked
+                ? `<button disabled title="Out of stock — cannot approve" class="text-xs bg-gray-300 text-gray-500 font-bold py-1 px-2 rounded cursor-not-allowed">Approve</button>`
+                : `<button onclick="resolveBundle('${req.id}', 'Approved')" class="text-xs bg-emeraldGreen hover:bg-green-600 text-white font-bold py-1 px-2 rounded transition-colors">Approve</button>`;
+
             tbody.insertAdjacentHTML('beforeend', `
                 <tr class="border-b border-gray-100 hover:bg-gray-50 transition-colors">
                     <td class="py-2 px-3 text-gray-800 font-medium">${req.requester}</td>
                     <td class="py-2 px-3 text-gray-500 text-xs">${req.requestDate}</td>
-                    <td class="py-2 px-3 text-navyBlue font-medium">${req.type}: ${req.details}</td>
+                    <td class="py-2 px-3 text-navyBlue font-medium">
+                        ${req.type}: ${req.details}
+                        ${blocked ? `<span class="block mt-0.5 text-[10px] font-bold text-red-600">⚠ Out of stock — cannot approve</span>` : ''}
+                    </td>
                     <td class="py-2 px-3 text-center">
                         <div class="flex gap-2 justify-center">
-                            <button onclick="resolveBundle('${req.id}', 'Approved')" class="text-xs bg-emeraldGreen hover:bg-green-600 text-white font-bold py-1 px-2 rounded transition-colors">Approve</button>
+                            ${approveBtn}
                             <button onclick="resolveBundle('${req.id}', 'Voided')" class="text-xs bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-2 rounded transition-colors">Void</button>
                         </div>
-                    </td>
-                </tr>`);
-        });
-    }
-
-    window.resolveBundle = async function(id, decision) {
-        const approver = document.getElementById('userSelector').value;
-        const res = await fetch('/inventory/api/resolve-bundle', { method: 'POST', headers, body: JSON.stringify({id, decision, approver}) });
-        appState = await res.json(); 
-        refreshAllUI();
-    }
-
-    function renderBundlingAuditTable() {
-        const tbody = document.getElementById('bundlingAuditTableBody'); 
-        tbody.innerHTML = '';
-        
-        if (appState.bundleAudit.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="4" class="py-4 text-center text-gray-400 italic">No activity logs yet.</td></tr>`; 
-            return;
-        }
-        
-        appState.bundleAudit.forEach(log => {
-            const sc = log.status === 'Approved' ? 'bg-green-100 text-green-700' : 'bg-gray-200 text-gray-600';
-            tbody.insertAdjacentHTML('beforeend', `
-                <tr class="border-b border-gray-100 hover:bg-gray-50 transition-colors">
-                    <td class="py-2 px-3 text-gray-500 text-xs">${log.actionDate}</td>
-                    <td class="py-2 px-3 text-navyBlue font-medium text-xs truncate max-w-[120px]" title="${log.type}: ${log.details}">${log.type}: ${log.details}</td>
-                    <td class="py-2 px-3 text-gray-600 text-xs">${log.requester} &rarr; <b>${log.approver}</b></td>
-                    <td class="py-2 px-3">
-                        <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${sc}">${log.status}</span>
                     </td>
                 </tr>`);
         });
@@ -1434,6 +1775,79 @@
     window.addEventListener('DOMContentLoaded', () => {
         initReturnsChart();
         refreshAllUI();
+    });
+
+    // 1. Missing API caller to approve/void requests
+    window.resolveBundle = async function(id, decision) {
+        // Grab the current acting user from the top right dropdown
+        const approver = document.getElementById('userSelector').value;
+        
+        try {
+            const res = await fetch('/inventory/api/resolve-bundle', { 
+                method: 'POST', 
+                headers, 
+                body: JSON.stringify({ id, decision, approver }) 
+            });
+            
+            const data = await res.json();
+            
+            if (data.success === false) {
+                alert(data.message);
+                return;
+            }
+            
+            appState = data; 
+            refreshAllUI();
+        } catch (error) {
+            console.error("Failed to resolve bundle:", error);
+        }
+    }
+
+    // 2. Missing function to draw the Audit Log table
+    window.renderBundlingAuditTable = function() {
+        const tbody = document.getElementById('bundlingAuditTableBody'); 
+        if (!tbody) return;
+        
+        tbody.innerHTML = '';
+        
+        if (!appState.bundleAudit || appState.bundleAudit.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="4" class="py-4 text-center text-gray-400 italic">No audit history found.</td></tr>`; 
+            return;
+        }
+        
+        appState.bundleAudit.forEach(req => {
+            let statusStyle = req.status === 'Approved' ? 'text-emeraldGreen' : 'text-red-500 line-through';
+            
+            tbody.insertAdjacentHTML('beforeend', `
+                <tr class="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                    <td class="py-2 px-3 text-gray-500 text-xs">${req.actionDate}</td>
+                    <td class="py-2 px-3 text-navyBlue font-medium">${req.type}: ${req.details}</td>
+                    <td class="py-2 px-3 text-gray-800 text-xs">Req: ${req.requester}<br>Appr: ${req.approver}</td>
+                    <td class="py-2 px-3 font-bold ${statusStyle}">${req.status}</td>
+                </tr>`);
+        });
+    }
+
+    // 1. Intercept clicks if we are already inside the SPA dashboard
+    function handleJsNav(event, tabName) {
+        event.preventDefault();
+        
+        // Cleanly update the URL in the browser without reloading
+        window.history.pushState({}, '', '/?tab=' + tabName);
+        
+        // Fire your existing function to change the UI
+        routeTo(tabName);
+    }
+
+    // 2. Automatically load the module if you arrive from another page (like Inventory Items)
+    document.addEventListener('DOMContentLoaded', function() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const tab = urlParams.get('tab');
+        
+        // If there is a tab parameter, load it immediately
+        if (tab && typeof routeTo === 'function') {
+            routeTo(tab);
+        }
     });
 </script> 
 @endsection
