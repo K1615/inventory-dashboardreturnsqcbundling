@@ -125,6 +125,22 @@ class InventorySubmoduleController extends Controller
             'itemsArray' => 'required|array',
         ]);
 
+        $itemIds = collect($request->itemsArray)->pluck('id')->filter()->values();
+
+        $overstockedItems = StockAlert::whereIn('item_id', $itemIds)
+            ->where('status', 'active')
+            ->where('type', 'overstock')
+            ->with('item')
+            ->get();
+
+        if ($overstockedItems->isNotEmpty()) {
+            $names = $overstockedItems->pluck('item.name')->filter()->unique()->implode(', ');
+            return response()->json([
+                'success' => false,
+                'message' => "Cannot create a purchase order — the following item(s) are currently Overstock: {$names}.",
+            ], 422);
+        }
+
         $newRequest = ApprovalRequest::create([
             'timestamp' => now()->format('Y-m-d H:i'),
             'requester' => self::ACTING_USER,
