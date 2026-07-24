@@ -605,14 +605,6 @@
                     <p class="text-sm text-gray-500 mt-1">Create custom builds or select pre-built packages to request for approval.</p>
                 </div>
                 
-                <div class="bg-white px-4 py-2 rounded-lg border border-gray-200 shadow-sm flex items-center gap-3">
-                    <span class="text-sm font-bold text-navyBlue">Current User:</span>
-                    <select id="userSelector" class="border border-gray-300 rounded text-sm px-2 py-1 focus:outline-none focus:border-emeraldGreen bg-white">
-                        <option value="Admin 1">Admin 1</option>
-                        <option value="Admin 2">Admin 2</option>
-                        <option value="Admin 3">Admin 3</option>
-                    </select>
-                </div>
             </header>
 
             <!-- Bundling Top Section: Custom Builder & Presets -->
@@ -1641,7 +1633,7 @@
     document.getElementById('confirmPresetPurchaseBtn').addEventListener('click', async () => {
         const p = bundlingPresets.find(i => i.id === bundlingSelectedPresetId);
         const payload = { 
-            requester: document.getElementById('userSelector').value, 
+            requester: 'Admin 1', 
             type: 'Pre-built', 
             details: p.name, 
             recipe: p.recipe 
@@ -1701,7 +1693,7 @@
 
     document.getElementById('placeCustomOrderBtn').addEventListener('click', async () => {
         const payload = { 
-            requester: document.getElementById('userSelector').value, 
+            requester: 'Admin 1', 
             type: 'Custom Build', 
             details: `Assembly (${bundlingPendingCustomIds.length} parts)`, 
             recipe: bundlingPendingCustomIds 
@@ -1780,7 +1772,7 @@
     // 1. Missing API caller to approve/void requests
     window.resolveBundle = async function(id, decision) {
         // Grab the current acting user from the top right dropdown
-        const approver = document.getElementById('userSelector').value;
+        const approver = 'Admin 1';
         
         try {
             const res = await fetch('/inventory/api/resolve-bundle', { 
