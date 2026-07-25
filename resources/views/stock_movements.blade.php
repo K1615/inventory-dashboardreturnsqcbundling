@@ -45,27 +45,51 @@
 
         <!-- SECTION 1: ACTIVE TRANSACTION REQUESTS -->
         <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
-                <div>
-                    <h2 class="text-lg font-bold text-navy">Transaction Requests</h2>
-                    <p class="text-xs text-gray-500">Active or unverified order movements awaiting completion status</p>
-                </div>
+            <!-- Card Header Container -->
+      <div class="flex items-center justify-between gap-4 mb-4">
+        <div>
+          <h2 class="text-lg font-bold text-navy">Transaction Requests</h2>
+          <p class="text-xs text-gray-500">Active or unverified order movements awaiting completion status</p>
+        </div>
 
-                <!-- FILTER CONTROLS FOR REQUESTS -->
-                <div class="flex flex-wrap items-center gap-2">
-                    <select 
-                        id="requestTypeFilter" 
-                        class="border border-gray-300 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-navy bg-white"
-                        onchange="filterRequestTable()"
-                    >
-                        <option value="All">All Types</option>
-                        <option value="Stock-In">Stock-In</option>
-                        <option value="Stock-Out">Stock-Out</option>
-                        <option value="Warehouse Transfer">Warehouse Transfer</option>
-                        <option value="Product Return">Product Return</option>
-                    </select>
-                </div>
-            </div>
+        <!-- Custom Dropdown Container -->
+        <div class="relative text-left" id="customFilterContainer">
+          
+          <!-- Hidden Native Select (Keeps JS Table Filter Working) -->
+          <select id="requestTypeFilter" class="hidden" onchange="filterRequestTable()">
+            <option value="All">All Types</option>
+            <option value="Stock-In">Stock-In</option>
+            <option value="Stock-Out">Stock-Out</option>
+            <option value="Warehouse Transfer">Warehouse Transfer</option>
+            <option value="Product Return">Product Return</option>
+          </select>
+
+          <!-- Animated Filter Button -->
+          <button
+            type="button"
+            onclick="toggleDropdown()"
+            class="flex items-center justify-between w-44 px-3.5 py-1.5 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded-lg shadow-sm hover:border-blue-500 hover:ring-2 hover:ring-blue-100 transition-all duration-200 focus:outline-none cursor-pointer"
+          >
+            <span id="selectedOptionText">All Types</span>
+            <svg id="dropdownChevron" class="w-4 h-4 text-gray-400 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+            </svg>
+          </button>
+
+          <!-- Animated Options Menu -->
+          <div
+            id="customDropdownMenu"
+            class="hidden absolute right-0 z-30 w-48 mt-1 bg-white rounded-lg shadow-lg border border-gray-200 py-1 opacity-0 scale-95 transition-all duration-150 origin-top-right"
+          >
+            <button type="button" onclick="selectFilterOption('All', 'All Types')" class="w-full text-left px-3 py-1.5 text-xs text-gray-700 hover:bg-blue-50 hover:text-blue-600 block transition-colors">All Types</button>
+            <button type="button" onclick="selectFilterOption('Stock-In', 'Stock-In')" class="w-full text-left px-3 py-1.5 text-xs text-gray-700 hover:bg-emerald-50 hover:text-emerald-600 block transition-colors">Stock-In</button>
+            <button type="button" onclick="selectFilterOption('Stock-Out', 'Stock-Out')" class="w-full text-left px-3 py-1.5 text-xs text-gray-700 hover:bg-amber-50 hover:text-amber-600 block transition-colors">Stock-Out</button>
+            <button type="button" onclick="selectFilterOption('Warehouse Transfer', 'Warehouse Transfer')" class="w-full text-left px-3 py-1.5 text-xs text-gray-700 hover:bg-indigo-50 hover:text-indigo-600 block transition-colors">Warehouse Transfer</button>
+            <button type="button" onclick="selectFilterOption('Product Return', 'Product Return')" class="w-full text-left px-3 py-1.5 text-xs text-gray-700 hover:bg-rose-50 hover:text-rose-600 block transition-colors">Product Return</button>
+          </div>
+
+        </div>
+      </div>
 
             <div class="overflow-x-auto">
                 <table class="w-full text-left text-xs border-collapse">
@@ -582,5 +606,61 @@
             }
         });
     }
+
+    // Toggle custom dropdown open/close with animation
+function toggleDropdown() {
+    const menu = document.getElementById('customDropdownMenu');
+    const chevron = document.getElementById('dropdownChevron');
+
+    if (menu.classList.contains('hidden')) {
+        menu.classList.remove('hidden');
+        setTimeout(() => {
+            menu.classList.remove('opacity-0', 'scale-95');
+            menu.classList.add('opacity-100', 'scale-100');
+        }, 10);
+        chevron.classList.add('rotate-180');
+    } else {
+        closeDropdown();
+    }
+}
+
+// Close dropdown smoothly
+function closeDropdown() {
+    const menu = document.getElementById('customDropdownMenu');
+    const chevron = document.getElementById('dropdownChevron');
+    
+    if (!menu) return;
+    
+    menu.classList.remove('opacity-100', 'scale-100');
+    menu.classList.add('opacity-0', 'scale-95');
+    chevron.classList.remove('rotate-180');
+    
+    setTimeout(() => {
+        menu.classList.add('hidden');
+    }, 200);
+}
+
+// Handle option click: updates hidden select & triggers existing filter function
+function selectFilterOption(value, label) {
+    document.getElementById('selectedOptionText').innerText = label;
+    
+    const hiddenSelect = document.getElementById('requestTypeFilter');
+    hiddenSelect.value = value;
+    
+    // Call your existing table filter logic!
+    if (typeof filterRequestTable === 'function') {
+        filterRequestTable();
+    }
+
+    closeDropdown();
+}
+
+// Close dropdown if clicked outside
+window.addEventListener('click', function(e) {
+    const container = document.getElementById('customFilterContainer');
+    if (container && !container.contains(e.target)) {
+        closeDropdown();
+    }
+});
 </script>
 @endsection
