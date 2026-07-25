@@ -113,25 +113,47 @@
 
         <!-- SECTION 2: FINALIZED TRANSACTION LOGS -->
         <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
-                <div>
-                    <h2 class="text-lg font-bold text-navy">Finalized Transaction History</h2>
-                    <p class="text-xs text-gray-500">Completed tracking archives of all approved or voided stock updates</p>
-                </div>
-                
-                <!-- FILTER CONTROLS FOR LOGS -->
-                <div class="flex flex-wrap items-center gap-2">
-                    <select 
-                        id="logStatusFilter" 
-                        class="border border-gray-300 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-navy bg-white"
-                        onchange="filterHistoryTable()"
-                    >
-                        <option value="All">All Outcomes</option>
-                        <option value="Approved">Approved</option>
-                        <option value="Voided">Voided</option>
-                    </select>
-                </div>
-            </div>
+            <!-- Card Header Container -->
+      <div class="flex items-center justify-between gap-4 mb-4">
+        <div>
+          <h2 class="text-lg font-bold text-navy">Finalized Transaction History</h2>
+          <p class="text-xs text-gray-500">Completed tracking archives of all approved or voided stock updates</p>
+        </div>
+
+        <!-- Custom Dropdown Container -->
+        <div class="relative text-left" id="customOutcomeContainer">
+          
+          <!-- Hidden Native Select (Preserves existing logStatusFilter logic) -->
+          <select id="logStatusFilter" class="hidden" onchange="filterHistoryTable()">
+            <option value="All">All Outcomes</option>
+            <option value="Approved">Approved</option>
+            <option value="Voided">Voided</option>
+          </select>
+
+          <!-- Animated Button -->
+          <button
+            type="button"
+            onclick="toggleOutcomeDropdown()"
+            class="flex items-center justify-between w-40 px-3.5 py-1.5 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded-lg shadow-sm hover:border-blue-500 hover:ring-2 hover:ring-blue-100 transition-all duration-200 focus:outline-none cursor-pointer"
+          >
+            <span id="selectedOutcomeText">All Outcomes</span>
+            <svg id="outcomeChevron" class="w-4 h-4 text-gray-400 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+            </svg>
+          </button>
+
+          <!-- Options Menu -->
+          <div
+            id="customOutcomeMenu"
+            class="hidden absolute right-0 z-30 w-44 mt-1 bg-white rounded-lg shadow-lg border border-gray-200 py-1 opacity-0 scale-95 transition-all duration-150 origin-top-right"
+          >
+            <button type="button" onclick="selectOutcomeOption('All', 'All Outcomes')" class="w-full text-left px-3 py-1.5 text-xs text-gray-700 hover:bg-blue-50 hover:text-blue-600 block transition-colors">All Outcomes</button>
+            <button type="button" onclick="selectOutcomeOption('Approved', 'Approved')" class="w-full text-left px-3 py-1.5 text-xs text-gray-700 hover:bg-emerald-50 hover:text-emerald-600 block transition-colors">Approved</button>
+            <button type="button" onclick="selectOutcomeOption('Voided', 'Voided')" class="w-full text-left px-3 py-1.5 text-xs text-gray-700 hover:bg-rose-50 hover:text-rose-600 block transition-colors">Voided</button>
+          </div>
+
+        </div>
+      </div>
 
             <div class="overflow-x-auto">
                 <table class="w-full text-left text-xs border-collapse">
@@ -170,19 +192,47 @@
                         class="border border-gray-300 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-navy w-44"
                         oninput="filterInventoryTable()"
                     >
-                    <select 
-                        id="partCategory" 
-                        class="border border-gray-300 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-navy bg-white"
-                        onchange="filterInventoryTable()"
-                    >
-                        <option value="All">All Categories</option>
-                        <option value="CPU">CPU</option>
-                        <option value="GPU">GPU</option>
-                        <option value="RAM">RAM</option>
-                        <option value="Storage">Storage</option>
-                        <option value="Motherboard">Motherboard</option>
-                        <option value="PSU">PSU</option>
-                    </select>
+                    <!-- Custom Category Dropdown Container -->
+        <div class="relative text-left" id="customCategoryContainer">
+          
+          <!-- Hidden Native Select (Keeps existing JS partCategory filter working) -->
+          <select id="partCategory" class="hidden" onchange="filterInventoryTable()">
+            <option value="All">All Categories</option>
+            <option value="CPU">CPU</option>
+            <option value="GPU">GPU</option>
+            <option value="RAM">RAM</option>
+            <option value="Storage">Storage</option>
+            <option value="Motherboard">Motherboard</option>
+            <option value="PSU">PSU</option>
+          </select>
+
+          <!-- Animated Filter Button -->
+          <button
+            type="button"
+            onclick="toggleCategoryDropdown()"
+            class="flex items-center justify-between w-40 px-3.5 py-1.5 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded-lg shadow-sm hover:border-blue-500 hover:ring-2 hover:ring-blue-100 transition-all duration-200 focus:outline-none cursor-pointer"
+          >
+            <span id="selectedCategoryText">All Categories</span>
+            <svg id="categoryChevron" class="w-4 h-4 text-gray-400 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+            </svg>
+          </button>
+
+          <!-- Options Menu -->
+          <div
+            id="customCategoryMenu"
+            class="hidden absolute right-0 z-30 w-44 mt-1 bg-white rounded-lg shadow-lg border border-gray-200 py-1 opacity-0 scale-95 transition-all duration-150 origin-top-right"
+          >
+            <button type="button" onclick="selectCategoryOption('All', 'All Categories')" class="w-full text-left px-3 py-1.5 text-xs text-gray-700 hover:bg-blue-50 hover:text-blue-600 block transition-colors">All Categories</button>
+            <button type="button" onclick="selectCategoryOption('CPU', 'CPU')" class="w-full text-left px-3 py-1.5 text-xs text-gray-700 hover:bg-blue-50 hover:text-blue-600 block transition-colors">CPU</button>
+            <button type="button" onclick="selectCategoryOption('GPU', 'GPU')" class="w-full text-left px-3 py-1.5 text-xs text-gray-700 hover:bg-blue-50 hover:text-blue-600 block transition-colors">GPU</button>
+            <button type="button" onclick="selectCategoryOption('RAM', 'RAM')" class="w-full text-left px-3 py-1.5 text-xs text-gray-700 hover:bg-blue-50 hover:text-blue-600 block transition-colors">RAM</button>
+            <button type="button" onclick="selectCategoryOption('Storage', 'Storage')" class="w-full text-left px-3 py-1.5 text-xs text-gray-700 hover:bg-blue-50 hover:text-blue-600 block transition-colors">Storage</button>
+            <button type="button" onclick="selectCategoryOption('Motherboard', 'Motherboard')" class="w-full text-left px-3 py-1.5 text-xs text-gray-700 hover:bg-blue-50 hover:text-blue-600 block transition-colors">Motherboard</button>
+            <button type="button" onclick="selectCategoryOption('PSU', 'PSU')" class="w-full text-left px-3 py-1.5 text-xs text-gray-700 hover:bg-blue-50 hover:text-blue-600 block transition-colors">PSU</button>
+          </div>
+
+        </div>
                 </div>
             </div>
 
@@ -662,5 +712,79 @@ window.addEventListener('click', function(e) {
         closeDropdown();
     }
 });
+// --- OUTCOME DROPDOWN LOGIC ---
+function toggleOutcomeDropdown() {
+  const menu = document.getElementById('customOutcomeMenu');
+  const chevron = document.getElementById('outcomeChevron');
+  
+  if (menu.classList.contains('hidden')) {
+    menu.classList.remove('hidden');
+    setTimeout(() => {
+      menu.classList.remove('opacity-0', 'scale-95');
+      chevron.classList.add('rotate-180');
+    }, 10);
+  } else {
+    closeOutcomeDropdown();
+  }
+}
+
+function closeOutcomeDropdown() {
+  const menu = document.getElementById('customOutcomeMenu');
+  const chevron = document.getElementById('outcomeChevron');
+  if (!menu) return;
+  
+  chevron.classList.remove('rotate-180');
+  menu.classList.add('opacity-0', 'scale-95');
+  setTimeout(() => menu.classList.add('hidden'), 150);
+}
+
+function selectOutcomeOption(value, label) {
+  document.getElementById('selectedOutcomeText').innerText = label;
+  const select = document.getElementById('logStatusFilter');
+  if (select) {
+    select.value = value;
+    if (typeof filterHistoryTable === 'function') {
+      filterHistoryTable();
+    }
+  }
+  closeOutcomeDropdown();
+}
+// --- CATEGORY DROPDOWN LOGIC ---
+function toggleCategoryDropdown() {
+  const menu = document.getElementById('customCategoryMenu');
+  const chevron = document.getElementById('categoryChevron');
+  
+  if (menu.classList.contains('hidden')) {
+    menu.classList.remove('hidden');
+    setTimeout(() => {
+      menu.classList.remove('opacity-0', 'scale-95');
+      chevron.classList.add('rotate-180');
+    }, 10);
+  } else {
+    closeCategoryDropdown();
+  }
+}
+
+function closeCategoryDropdown() {
+  const menu = document.getElementById('customCategoryMenu');
+  const chevron = document.getElementById('categoryChevron');
+  if (!menu) return;
+  
+  chevron.classList.remove('rotate-180');
+  menu.classList.add('opacity-0', 'scale-95');
+  setTimeout(() => menu.classList.add('hidden'), 150);
+}
+
+function selectCategoryOption(value, label) {
+  document.getElementById('selectedCategoryText').innerText = label;
+  const select = document.getElementById('partCategory');
+  if (select) {
+    select.value = value;
+    if (typeof filterInventoryTable === 'function') {
+      filterInventoryTable();
+    }
+  }
+  closeCategoryDropdown();
+}
 </script>
 @endsection
