@@ -1,0 +1,225 @@
+# Inventory → Procurement Auto-Reorder API Integration
+
+This document explains how the auto-reorder integration between the **Inventory** system and the **Procurement** system works, and how to set it up on a new machine.
+
+---
+
+## 1. What This Integration Does
+
+When an item in Inventory becomes low/out of stock **and** has auto-reorder switched on, Inventory automatically:
+1. Creates a Draft purchase order in its own database
+2. Sends that draft to Procurement via an API call
+3. Procurement saves it as a new Pending purchase request
+
+This is a **one-way, one-time sync** — it only fires once, at the moment the draft is created. Nothing that happens to the order afterward (submitted, approved, voided, received) is sent again.
+
+```
+INVENTORY (port 8000)                         PROCUREMENT (port 8001)
+──────────────────────                        ────────────────────────
+StockAlert created (low_stock/out_of_stock)
+        │
+        ▼
+AutoReorderService::evaluate()
+        │
+        ▼
+ApprovalRequest (Draft) saved
+  in Inventory's own database
+        │
+        │   HTTP POST (JSON)
+        │   → /api/purchase-requests
+        └──────────────────────────────►  Validates request
+                                           Creates PurchaseRequest
+                                             (status: Pending,
+                                              source: inventory_auto)
+                                             in Procurement's own database
+                                                    │
+                                                    ▼
+                                           Shows up on /requests/pending
+                                           Manager reviews & approves
+                                                    │
+                                                    ▼
+                                           Existing booted() hook creates
+                                           a Purchase history record
+```
+
+Two separate Laravel apps, two separate databases, connected only by this one HTTP call.
+
+---
+
+## 2. Where the Code Lives
+
+### Inventory repo (sender)
+| File | What changed |
+|---|---|
+| `config/services.php` | Added `procurement` config block (reads URL + API key from `.env`) |
+| `app/Services/AutoReorderService.php` | Added `Http::post(...)` call right after the Draft `ApprovalRequest` is created, wrapped in try/catch, logs result to `SystemLog` |
+| `.env` | Added `PROCUREMENT_API_URL` and `PROCUREMENT_API_KEY` |
+
+### Procurement repo (receiver)
+| File | What changed |
+|---|---|
+| `routes/api.php` | New file — defines `POST /api/purchase-requests` |
+| `bootstrap/app.php` | Registered `routes/api.php` in the routing config |
+| `database/migrations/..._add_inventory_fields_to_purchase_requests_table.php` | New migration adding `inventory_reorder_id` (unique) and `source` columns |
+| `app/Models/PurchaseRequest.php` | Added the two new columns to `$fillable` |
+| `app/Http/Controllers/PurchaseRequestController.php` | Added `storeFromInventory()` method — validates payload, checks API key, creates the `PurchaseRequest` |
+| `config/services.php` | Added `inventory` config block (reads the shared API key from `.env`) |
+| `.env` | Added `INVENTORY_API_KEY` |
+
+---
+
+## 3. Setup Instructions (New PC)
+
+Do this for **both** repos, on the new machine.
+
+### 3.1 Prerequisites
+- [Laragon](https://laragon.org/) installed (includes PHP, MySQL, Composer, Node)
+- Git installed
+- A GitHub account with access to both repos
+
+### 3.2 Clone both repos
+
+```bash
+cd C:\laragon\www
+
+git clone -b dan-pull-req https://github.com/K1615/inventory-dashboardreturnsqcbundling.git
+git clone https://github.com/YOUR-USERNAME/Procurement-System.git
+```
+
+### 3.3 Set up each repo (run inside each folder)
+
+```bash
+composer install
+copy .env.example .env
+php artisan key:generate
+npm install
+```
+
+> If `composer install` fails complaining about `ext-zip`, enable the `zip` extension in `php.ini` (Laragon → Menu → PHP → php.ini → uncomment `extension=zip`) and restart Laragon.
+
+### 3.4 Create databases
+
+In Laragon's database tool (phpMyAdmin/HeidiSQL), create:
+- `inventory_db` (for the Inventory repo)
+- `procurement_db` (for the Procurement repo)
+
+Update each `.env` file's DB section:
+```
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=inventory_db      (or procurement_db)
+DB_USERNAME=root
+DB_PASSWORD=
+```
+
+### 3.5 Add the integration-specific `.env` values
+
+**Inventory `.env`** — add:
+```
+PROCUREMENT_API_URL=http://127.0.0.1:8001/api/purchase-requests
+PROCUREMENT_API_KEY=some-shared-secret-123
+```
+
+**Procurement `.env`** — add:
+```
+INVENTORY_API_KEY=some-shared-secret-123
+```
+
+⚠️ `PROCUREMENT_API_KEY` and `INVENTORY_API_KEY` **must match exactly** — this is the shared secret both apps use to trust each other.
+
+### 3.6 Run migrations (with seed data for testing)
+
+In each repo:
+```bash
+php artisan migrate --seed
+```
+
+### 3.7 Run both servers at the same time
+
+You need **two terminal tabs open simultaneously** (use Laragon's Terminal button, then `Ctrl+T` for a new tab, or open Laragon's Terminal twice).
+
+Tab 1 (Inventory):
+```bash
+cd C:\laragon\www\inventory-dashboardreturnsqcbundling
+php artisan serve --port=8000
+```
+
+Tab 2 (Procurement):
+```bash
+cd C:\laragon\www\Procurement-System
+php artisan serve --port=8001
+```
+
+Leave both running — closing either tab stops that server and breaks the integration.
+
+---
+
+## 4. How to Test It Works
+
+1. Open Inventory's tinker in a **third** terminal tab:
+   ```bash
+   cd C:\laragon\www\inventory-dashboardreturnsqcbundling
+   php artisan tinker
+   ```
+
+2. Force a test low-stock item + alert, then trigger the service:
+   ```php
+   $item = App\Models\Item::first();
+   $item->auto_reorder = true;
+   $item->minLimit = 10;
+   $item->maxLimit = 100;
+   $item->qty = 5;
+   $item->save();
+
+   App\Models\StockAlert::create([
+       'item_id' => $item->id,
+       'type' => 'low_stock',
+       'severity' => 'high',
+       'current_qty' => $item->qty,
+       'threshold_qty' => $item->minLimit,
+       'status' => 'active',
+   ]);
+
+   App\Services\AutoReorderService::evaluate();
+   ```
+
+3. Check the sync result:
+   ```php
+   App\Models\SystemLog::latest()->take(2)->get(['user','action']);
+   ```
+   Look for: `"Synced draft PO #X to Procurement."`
+
+4. Confirm it landed in Procurement — in Procurement's own tinker:
+   ```php
+   App\Models\PurchaseRequest::where('source', 'inventory_auto')->latest()->get();
+   ```
+   Or visually: `http://127.0.0.1:8001/requests/pending` (use the search box — there may be many seeded requests ahead of it).
+
+---
+
+## 5. Where Changes Actually Show Up
+
+| Where | What you'll see |
+|---|---|
+| Inventory `system_logs` table / dashboard | `"Auto-reorder triggered..."` and `"Synced draft PO #X to Procurement"` (or a `"Failed to sync..."` error) |
+| Inventory `approval_requests` table | The Draft PO itself, local to Inventory, independent of Procurement afterward |
+| Procurement `purchase_requests` table | A new row with `source = inventory_auto`, `status = Pending`, and `inventory_reorder_id` pointing back to the Inventory draft's ID |
+| Procurement `requests/pending` page | The new request appears in the normal review queue, same as a manually submitted one |
+| Procurement `purchases` table | Populated automatically **only after** a manager approves the request (existing `booted()` hook on `PurchaseRequest`) |
+
+---
+
+## 6. Known Limitation
+
+This is a **one-way** sync only. If a Draft is discarded/voided back in Inventory *after* it already synced, Procurement is never notified — its copy stays as a normal Pending request with no link to the cancellation. A round-trip (Procurement notifying Inventory on approval/rejection) was intentionally left out of this version and can be added later if needed.
+
+---
+
+## 7. Pull Request Checklist
+
+Before opening PRs on each repo:
+- [ ] Remove any test data created during manual testing (test `StockAlert`, test `ApprovalRequest`/`PurchaseRequest` rows) if it's not meant to ship
+- [ ] Confirm no duplicate/empty migration files are left in `database/migrations/`
+- [ ] Confirm `.env.example` in both repos documents the new variables (without real secret values) so teammates know to set them
+- [ ] Double check `PROCUREMENT_API_KEY` / `INVENTORY_API_KEY` are **not** committed with real production values if this repo is public
