@@ -193,46 +193,50 @@
                         oninput="filterInventoryTable()"
                     >
                     <!-- Custom Category Dropdown Container -->
-        <div class="relative text-left" id="customCategoryContainer">
-          
-          <!-- Hidden Native Select (Keeps existing JS partCategory filter working) -->
-          <select id="partCategory" class="hidden" onchange="filterInventoryTable()">
-            <option value="All">All Categories</option>
-            <option value="CPU">CPU</option>
-            <option value="GPU">GPU</option>
-            <option value="RAM">RAM</option>
-            <option value="Storage">Storage</option>
-            <option value="Motherboard">Motherboard</option>
-            <option value="PSU">PSU</option>
-          </select>
+       <div class="relative text-left" id="customCategoryContainer">
+      
+      <!-- Hidden Native Select (Matches table badge names for filter JS) -->
+      <select id="partCategory" class="hidden" onchange="filterInventoryTable()">
+        <option value="All">All Categories</option>
+        <option value="Processor">Processor</option>
+        <option value="Graphics Card">Graphics Card</option>
+        <option value="Memory">Memory</option>
+        <option value="Storage">Storage</option>
+        <option value="Motherboard">Motherboard</option>
+        <option value="Power Supply">Power Supply</option>
+        <option value="Case">Case</option>
+        <option value="Cooler">Cooler</option>
+      </select>
 
-          <!-- Animated Filter Button -->
-          <button
-            type="button"
-            onclick="toggleCategoryDropdown()"
-            class="flex items-center justify-between w-40 px-3.5 py-1.5 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded-lg shadow-sm hover:border-blue-500 hover:ring-2 hover:ring-blue-100 transition-all duration-200 focus:outline-none cursor-pointer"
-          >
-            <span id="selectedCategoryText">All Categories</span>
-            <svg id="categoryChevron" class="w-4 h-4 text-gray-400 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-            </svg>
-          </button>
+      <!-- Animated Filter Button -->
+      <button
+        type="button"
+        onclick="toggleCategoryDropdown()"
+        class="flex items-center justify-between w-40 px-3.5 py-1.5 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded-lg shadow-sm hover:border-blue-500 hover:ring-2 hover:ring-blue-100 transition-all duration-200 focus:outline-none cursor-pointer"
+      >
+        <span id="selectedCategoryText">All Categories</span>
+        <svg id="categoryChevron" class="w-4 h-4 text-gray-400 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+        </svg>
+      </button>
 
-          <!-- Options Menu -->
-          <div
-            id="customCategoryMenu"
-            class="hidden absolute right-0 z-30 w-44 mt-1 bg-white rounded-lg shadow-lg border border-gray-200 py-1 opacity-0 scale-95 transition-all duration-150 origin-top-right"
-          >
-            <button type="button" onclick="selectCategoryOption('All', 'All Categories')" class="w-full text-left px-3 py-1.5 text-xs text-gray-700 hover:bg-blue-50 hover:text-blue-600 block transition-colors">All Categories</button>
-            <button type="button" onclick="selectCategoryOption('CPU', 'CPU')" class="w-full text-left px-3 py-1.5 text-xs text-gray-700 hover:bg-blue-50 hover:text-blue-600 block transition-colors">CPU</button>
-            <button type="button" onclick="selectCategoryOption('GPU', 'GPU')" class="w-full text-left px-3 py-1.5 text-xs text-gray-700 hover:bg-blue-50 hover:text-blue-600 block transition-colors">GPU</button>
-            <button type="button" onclick="selectCategoryOption('RAM', 'RAM')" class="w-full text-left px-3 py-1.5 text-xs text-gray-700 hover:bg-blue-50 hover:text-blue-600 block transition-colors">RAM</button>
-            <button type="button" onclick="selectCategoryOption('Storage', 'Storage')" class="w-full text-left px-3 py-1.5 text-xs text-gray-700 hover:bg-blue-50 hover:text-blue-600 block transition-colors">Storage</button>
-            <button type="button" onclick="selectCategoryOption('Motherboard', 'Motherboard')" class="w-full text-left px-3 py-1.5 text-xs text-gray-700 hover:bg-blue-50 hover:text-blue-600 block transition-colors">Motherboard</button>
-            <button type="button" onclick="selectCategoryOption('PSU', 'PSU')" class="w-full text-left px-3 py-1.5 text-xs text-gray-700 hover:bg-blue-50 hover:text-blue-600 block transition-colors">PSU</button>
-          </div>
+      <!-- Options Menu -->
+      <div
+        id="customCategoryMenu"
+        class="hidden absolute right-0 z-30 w-44 mt-1 bg-white rounded-lg shadow-lg border border-gray-200 py-1 opacity-0 scale-95 transition-all duration-150 origin-top-right max-h-60 overflow-y-auto"
+      >
+        <button type="button" onclick="selectCategoryOption('All', 'All Categories')" class="w-full text-left px-3 py-1.5 text-xs text-gray-700 hover:bg-blue-50 hover:text-blue-600 block transition-colors">All Categories</button>
+        <button type="button" onclick="selectCategoryOption('Processor', 'Processor')" class="w-full text-left px-3 py-1.5 text-xs text-gray-700 hover:bg-blue-50 hover:text-blue-600 block transition-colors">Processor</button>
+        <button type="button" onclick="selectCategoryOption('Graphics Card', 'Graphics Card')" class="w-full text-left px-3 py-1.5 text-xs text-gray-700 hover:bg-blue-50 hover:text-blue-600 block transition-colors">Graphics Card</button>
+        <button type="button" onclick="selectCategoryOption('Memory', 'Memory')" class="w-full text-left px-3 py-1.5 text-xs text-gray-700 hover:bg-blue-50 hover:text-blue-600 block transition-colors">Memory</button>
+        <button type="button" onclick="selectCategoryOption('Storage', 'Storage')" class="w-full text-left px-3 py-1.5 text-xs text-gray-700 hover:bg-blue-50 hover:text-blue-600 block transition-colors">Storage</button>
+        <button type="button" onclick="selectCategoryOption('Motherboard', 'Motherboard')" class="w-full text-left px-3 py-1.5 text-xs text-gray-700 hover:bg-blue-50 hover:text-blue-600 block transition-colors">Motherboard</button>
+        <button type="button" onclick="selectCategoryOption('Power Supply', 'Power Supply')" class="w-full text-left px-3 py-1.5 text-xs text-gray-700 hover:bg-blue-50 hover:text-blue-600 block transition-colors">Power Supply</button>
+        <button type="button" onclick="selectCategoryOption('Case', 'Case')" class="w-full text-left px-3 py-1.5 text-xs text-gray-700 hover:bg-blue-50 hover:text-blue-600 block transition-colors">Case</button>
+        <button type="button" onclick="selectCategoryOption('Cooler', 'Cooler')" class="w-full text-left px-3 py-1.5 text-xs text-gray-700 hover:bg-blue-50 hover:text-blue-600 block transition-colors">Cooler</button>
+      </div>
 
-        </div>
+    </div>
                 </div>
             </div>
 
