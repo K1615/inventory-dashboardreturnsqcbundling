@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>ERP Inventory Management System</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -17,6 +18,7 @@
             }
         }
     </script>
+    @include('partials.auth-fetch')
 </head>
 <body class="bg-gray-50 font-sans text-gray-800 min-h-screen flex flex-col md:flex-row">
 
@@ -89,10 +91,7 @@
             </nav>
         </div>
         <div class="p-4 border-t border-white/10 bg-black/10 flex items-center justify-between text-sm font-semibold">
-            <a href="#" class="hover:text-blue-200 transition-colors flex items-center gap-2 py-1 px-2 rounded hover:bg-white/5 text-xs">
-                <span class="w-2 h-2 rounded-full bg-emeraldAccent"></span>Admin Panel
-            </a>
-            <button onclick="alert('Logging out...')" class="hover:text-red-300 text-white/80 transition-colors flex items-center gap-1 py-1 px-2 rounded hover:bg-white/5 text-xs">Logout</button>
+            @include('partials.authenticated-user')
         </div>
     </aside>
 

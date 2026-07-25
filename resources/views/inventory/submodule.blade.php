@@ -114,13 +114,7 @@
 
         <!-- User Profile Actions -->
         <div class="p-4 border-t border-white/10 bg-black/10 flex items-center justify-between text-sm font-semibold shrink-0">
-            <a href="#" class="hover:text-blue-200 transition-colors flex items-center gap-2 py-1 px-2 rounded hover:bg-white/5 text-xs">
-                <span class="w-2 h-2 rounded-full bg-emeraldGreen"></span>
-                Admin Panel
-            </a>
-            <button onclick="alert('Logging out...')" class="hover:text-red-300 text-white/80 transition-colors flex items-center gap-1 py-1 px-2 rounded hover:bg-white/5 text-xs">
-                Logout
-            </button>
+            @include('partials.authenticated-user')
         </div>
     </aside>
 
@@ -438,11 +432,9 @@
                             </div>
                             <div>
                                 <label class="block text-xs font-semibold text-gray-700 mb-1">Operator</label>
-                                <select id="insOp" required class="w-full border border-gray-300 rounded-md p-2 text-sm focus:border-navyBlue outline-none bg-white">
-                                    <option value="admin1">admin1</option>
-                                    <option value="admin2">admin2</option>
-                                    <option value="admin3">admin3</option>
-                                </select>
+                                <div class="w-full rounded-md border border-gray-200 bg-gray-50 p-2 text-sm font-semibold text-gray-700">
+                                    {{ auth()->user()->name }}
+                                </div>
                             </div>
                         </div>
                         <div>
@@ -496,11 +488,9 @@
                             </div>
                             <div>
                                 <label class="block text-xs font-semibold text-gray-700 mb-1">Operator</label>
-                                <select id="rmaOp" required class="w-full border border-gray-300 rounded-md p-2 text-sm focus:border-navyBlue outline-none bg-white">
-                                    <option value="admin1">admin1</option>
-                                    <option value="admin2">admin2</option>
-                                    <option value="admin3">admin3</option>
-                                </select>
+                                <div class="w-full rounded-md border border-gray-200 bg-gray-50 p-2 text-sm font-semibold text-gray-700">
+                                    {{ auth()->user()->name }}
+                                </div>
                             </div>
                         </div>
                         <button type="submit" class="w-full bg-navyBlue text-white font-bold py-2.5 rounded-md hover:bg-blue-900 transition-colors mt-2 text-sm">
@@ -607,11 +597,7 @@
                 
                 <div class="bg-white px-4 py-2 rounded-lg border border-gray-200 shadow-sm flex items-center gap-3">
                     <span class="text-sm font-bold text-navyBlue">Current User:</span>
-                    <select id="userSelector" class="border border-gray-300 rounded text-sm px-2 py-1 focus:outline-none focus:border-emeraldGreen bg-white">
-                        <option value="Admin 1">Admin 1</option>
-                        <option value="Admin 2">Admin 2</option>
-                        <option value="Admin 3">Admin 3</option>
-                    </select>
+                    <span class="text-sm font-semibold text-gray-700">{{ auth()->user()->name }}</span>
                 </div>
             </header>
 
@@ -1359,7 +1345,6 @@
         const payload = { 
             itemId: document.getElementById('insItem').value, 
             source: document.getElementById('insSource').value, 
-            op: document.getElementById('insOp').value, 
             outcome: document.getElementById('insOutcome').value 
         };
         const res = await fetch('/inventory/api/inspection', { method: 'POST', headers, body: JSON.stringify(payload) });
@@ -1376,7 +1361,6 @@
         const payload = { 
             itemId: document.getElementById('rmaItem').value, 
             vendor: document.getElementById('rmaVendor').value, 
-            op: document.getElementById('rmaOp').value, 
             reasons: Array.from(checkboxes).map(cb => cb.value).join(', ') 
         };
         const res = await fetch('/inventory/api/rma', { method: 'POST', headers, body: JSON.stringify(payload) });
@@ -1641,7 +1625,6 @@
     document.getElementById('confirmPresetPurchaseBtn').addEventListener('click', async () => {
         const p = bundlingPresets.find(i => i.id === bundlingSelectedPresetId);
         const payload = { 
-            requester: document.getElementById('userSelector').value, 
             type: 'Pre-built', 
             details: p.name, 
             recipe: p.recipe 
@@ -1701,7 +1684,6 @@
 
     document.getElementById('placeCustomOrderBtn').addEventListener('click', async () => {
         const payload = { 
-            requester: document.getElementById('userSelector').value, 
             type: 'Custom Build', 
             details: `Assembly (${bundlingPendingCustomIds.length} parts)`, 
             recipe: bundlingPendingCustomIds 
@@ -1779,14 +1761,11 @@
 
     // 1. Missing API caller to approve/void requests
     window.resolveBundle = async function(id, decision) {
-        // Grab the current acting user from the top right dropdown
-        const approver = document.getElementById('userSelector').value;
-        
         try {
             const res = await fetch('/inventory/api/resolve-bundle', { 
                 method: 'POST', 
                 headers, 
-                body: JSON.stringify({ id, decision, approver }) 
+                body: JSON.stringify({ id, decision })
             });
             
             const data = await res.json();

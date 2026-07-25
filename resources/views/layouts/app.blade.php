@@ -7,6 +7,7 @@
 
     <!-- This will pull in the CSRF token, Tailwind CDN, Chart.js, and specific styles from submodule.blade.php -->
     @yield('head')
+    @include('partials.auth-fetch')
 </head>
 <body class="antialiased bg-gray-50">
     

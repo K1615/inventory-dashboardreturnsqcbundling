@@ -2,12 +2,10 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
 use App\Models\Item;
 use App\Models\StockMovementRequest;
-use App\Models\AuditMovementLog;
 use Carbon\Carbon;
-use Illuminate\Support\Facades\DB;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Str;
 
@@ -23,12 +21,12 @@ class WarehouseLayoutController extends Controller
         $inventory = Item::all();
         $warehouses = Item::distinct()->pluck('warehouse')->filter()->values();
         $zones = Item::distinct()->pluck('zone')->filter()->values();
-        
+
         // 1. Fetch Pending Requests
         $requests = StockMovementRequest::with('item')
             ->whereRaw('LOWER(status) = ?', ['pending'])
             ->get();
-        
+
         $pendingRequests = $requests->map(function ($req) {
             return [
                 'id' => $req->id,
@@ -49,7 +47,7 @@ class WarehouseLayoutController extends Controller
             ->orderBy('updated_at', 'desc')
             ->take(50) // Limit to the 50 most recent logs so the UI doesn't lag over time
             ->get();
-            
+
         $historyLogs = $logs->map(function ($log) {
             return [
                 'type' => strtoupper($log->status), // Maps 'Approved' to 'APPROVED' for your frontend badge logic
@@ -71,72 +69,97 @@ class WarehouseLayoutController extends Controller
             'inventory' => $inventory,
             'warehouses' => $warehouses,
             'zones' => $zones,
-            'pendingRequests' => $pendingRequests, 
-            'historyLogs' => $historyLogs // Replaced the hardcoded [] with the real database logs!
+            'pendingRequests' => $pendingRequests,
+            'historyLogs' => $historyLogs, // Replaced the hardcoded [] with the real database logs!
         ]);
     }
 
     // 1. Process Single Transfer Requests
     public function storeRequest(Request $request)
     {
+        $request->validate([
+            'itemId' => ['required', 'string', 'exists:items,id'],
+            'toWh' => ['required', 'string', 'max:255'],
+            'toZone' => ['required', 'string', 'max:255'],
+            'qty' => ['required', 'integer', 'min:1'],
+            'date' => ['required', 'date'],
+        ]);
+
         try {
             $item = Item::findOrFail($request->itemId);
 
             StockMovementRequest::create([
                 'item_id' => $item->id,
-                'requester' => $request->requester,
+                'requester' => $request->user()->name,
                 'from_wh' => $item->warehouse,
                 'from_zone' => $item->zone,
                 'to_wh' => $request->toWh,
                 'to_zone' => $request->toZone,
                 'qty' => $request->qty,
                 'planned_date' => $request->date,
-                'status' => 'Pending'
+                'status' => 'Pending',
             ]);
 
             return response()->json(['success' => true]);
         } catch (\Exception $e) {
-            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+            report($e);
+
+            return response()->json(['success' => false, 'message' => 'Unable to create the transfer request.'], 500);
         }
     }
 
     // 2. Process Batch Transfer Requests
     public function storeBatchRequest(Request $request)
     {
+        $request->validate([
+            'srcWh' => ['required', 'string', 'max:255', 'different:targetWh'],
+            'targetWh' => ['required', 'string', 'max:255'],
+            'date' => ['required', 'date'],
+            'items' => ['required', 'array', 'min:1'],
+            'items.*.id' => ['required', 'string', 'exists:items,id'],
+            'items.*.toZone' => ['required', 'string', 'max:255'],
+            'items.*.qty' => ['required', 'integer', 'min:1'],
+        ]);
+
         try {
             foreach ($request->items as $reqItem) {
                 $item = Item::findOrFail($reqItem['id']);
-                
+
                 StockMovementRequest::create([
                     'item_id' => $item->id,
-                    'requester' => $request->requester,
+                    'requester' => $request->user()->name,
                     'from_wh' => $request->srcWh,
                     'from_zone' => $item->zone,
                     'to_wh' => $request->targetWh,
                     'to_zone' => $reqItem['toZone'],
                     'qty' => $reqItem['qty'],
                     'planned_date' => $request->date,
-                    'status' => 'Pending'
+                    'status' => 'Pending',
                 ]);
             }
 
             return response()->json(['success' => true]);
         } catch (\Exception $e) {
-            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+            report($e);
+
+            return response()->json(['success' => false, 'message' => 'Unable to create the batch transfer request.'], 500);
         }
     }
 
-
     public function processApproval(Request $request, $id)
     {
+        $request->validate([
+            'status' => ['required', 'in:approve,void'],
+        ]);
+
         try {
             $movementRequest = StockMovementRequest::findOrFail($id);
 
             // Guardrail: Lock the state machine to prevent double-clicking
             if (strtolower($movementRequest->status) !== 'pending') {
                 return response()->json([
-                    'success' => false, 
-                    'message' => 'Action Denied: This transaction has already been processed.'
+                    'success' => false,
+                    'message' => 'Action Denied: This transaction has already been processed.',
                 ], 400);
             }
 
@@ -144,6 +167,7 @@ class WarehouseLayoutController extends Controller
             if ($request->status === 'void') {
                 $movementRequest->status = 'Voided';
                 $movementRequest->save();
+
                 return response()->json(['success' => true]);
             }
 
@@ -155,9 +179,10 @@ class WarehouseLayoutController extends Controller
                 if ($sourceItem->qty < $movementRequest->qty) {
                     $movementRequest->status = 'Voided';
                     $movementRequest->save();
+
                     return response()->json([
-                        'success' => false, 
-                        'message' => 'Action Denied: Insufficient stock at source. Request has been automatically voided.'
+                        'success' => false,
+                        'message' => 'Action Denied: Insufficient stock at source. Request has been automatically voided.',
                     ], 400);
                 }
 
@@ -180,13 +205,13 @@ class WarehouseLayoutController extends Controller
                 } else {
                     // If the item is entirely new to this location, create a localized inventory record for it
                     Item::create([
-                        'id' => 'PRD-' . strtoupper(Str::random(8)), // Matches your PRD-XXXXXXXX string format
+                        'id' => 'PRD-'.strtoupper(Str::random(8)), // Matches your PRD-XXXXXXXX string format
                         'name' => $sourceItem->name,
                         'category' => $sourceItem->category,
                         'qty' => $movementRequest->qty,
                         'warehouse' => $movementRequest->to_wh,
                         'zone' => $movementRequest->to_zone,
-                        'last_moved' => now()
+                        'last_moved' => now(),
                     ]);
                 }
 
@@ -207,7 +232,9 @@ class WarehouseLayoutController extends Controller
             return response()->json(['success' => false, 'message' => 'Invalid action type requested.'], 400);
 
         } catch (\Exception $e) {
-            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+            report($e);
+
+            return response()->json(['success' => false, 'message' => 'Unable to process the transfer request.'], 500);
         }
     }
 }

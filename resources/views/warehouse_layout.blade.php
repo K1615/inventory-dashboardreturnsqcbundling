@@ -76,18 +76,7 @@
         </div>
 
         <div class="p-4 border-t border-white/10 bg-black/10 flex items-center justify-between text-sm font-semibold">
-            <div class="flex items-center gap-2 text-xs text-blue-100">
-                <span class="w-2 h-2 rounded-full bg-[#10B981]"></span>
-                <select id="currentUserSession" class="bg-transparent font-bold text-white focus:outline-none cursor-pointer">
-                    <option value="Admin 1" class="text-gray-800">Admin 1</option>
-                    <option value="Admin 2" class="text-gray-800">Admin 2</option>
-                    <option value="Admin 3" class="text-gray-800">Admin 3</option>
-                    <option value="Admin 4" class="text-gray-800">Admin 4</option>
-                </select>
-            </div>
-            <button onclick="alert('Logging out...')" class="hover:text-red-300 text-white/80 transition-colors flex items-center gap-1 py-1 px-2 rounded hover:bg-white/5 text-xs">
-                Logout
-            </button>
+            @include('partials.authenticated-user')
         </div>
     </aside>
 
@@ -650,7 +639,6 @@
         // REMOVED parseInt()
         const id = document.getElementById('modalItemId').value; 
         const sourceItem = inventoryData.find(i => i.id === id);
-        const currentSelectedAdmin = document.getElementById('currentUserSession').value;
         const toWh = document.getElementById('modalDestWh').value;
         const toZone = document.getElementById('modalDestZone').value;
         const qty = parseInt(document.getElementById('modalDestQty').value);
@@ -666,7 +654,6 @@
                 method: 'POST',
                 body: JSON.stringify({
                     itemId: sourceItem.id,
-                    requester: currentSelectedAdmin,
                     toWh: toWh,
                     toZone: toZone,
                     qty: qty,
@@ -727,8 +714,6 @@
         const srcWh = document.getElementById('batchSourceWh').value;
         const targetWh = document.getElementById('batchTargetWh').value;
         const moveDate = document.getElementById('batchMoveDate').value;
-        const currentSelectedAdmin = document.getElementById('currentUserSession').value;
-
         if (srcWh === targetWh) {
             alert("Source and Target warehouses must be different locations.");
             return;
@@ -765,7 +750,6 @@
                     srcWh: srcWh,
                     targetWh: targetWh,
                     date: moveDate,
-                    requester: currentSelectedAdmin,
                     items: packageItems
                 })
             });

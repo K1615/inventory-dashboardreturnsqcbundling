@@ -271,9 +271,10 @@
                         </label>
                     </td>
                     <td class="py-3 px-4 text-right">
-                        <button onclick="alertsOpenPOModal('${item.id}', '${safeItemName}')" class="px-2.5 py-1 text-xs font-semibold rounded bg-blue-50 text-navyBlue hover:bg-navyBlue hover:text-white border border-blue-200 transition">
-                            Create PO
-                        </button>
+                        ${status === 'Overstock'
+                            ? `<button disabled title="Item is currently Overstock — a new order isn't needed." class="px-2.5 py-1 text-xs font-semibold rounded bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed">Create PO</button>`
+                            : `<button onclick="alertsOpenPOModal('${item.id}', '${safeItemName}')" class="px-2.5 py-1 text-xs font-semibold rounded bg-blue-50 text-navyBlue hover:bg-navyBlue hover:text-white border border-blue-200 transition">Create PO</button>`
+                        }
                     </td>
                 </tr>`;
         }).join('');
@@ -452,6 +453,11 @@
     }
 
     window.alertsOpenPOModal = function(id, name) {
+        const item = (appState.inventory || []).find(i => i.id === id);
+        if (item && alertsGetStatus(item) === 'Overstock') {
+            alert('This item is currently Overstock — a new purchase order isn\'t needed.');
+            return;
+        }
         document.getElementById('alertsModalItemId').value = id;
         document.getElementById('alertsModalItemName').innerText = name;
         document.getElementById('alertsPoModal').classList.remove('hidden');
@@ -480,7 +486,14 @@
         };
 
         const res = await fetch('/inventory/api/submit-po', { method: 'POST', headers, body: JSON.stringify(payload) });
-        appState = await res.json();
+        const data = await res.json();
+
+        if (!res.ok || data.success === false) {
+            alert(data.message || 'Could not submit purchase order.');
+            return;
+        }
+
+        appState = data;
         alertsClosePOModal();
         alertsRenderAll();
         try { refreshAllUI(); } catch(e) {}

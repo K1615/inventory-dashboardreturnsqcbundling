@@ -1,36 +1,56 @@
-# Changelog — Alerts & Reorders
+# Changelog
 
-## 2026-07-23 (2)
+## 2026-07-25 — Session authentication and developer turnover
 
-### Fixed Transfers Velocity chart (Warehouse Layout page)
-- Bug: chart grouped approved transfers by full timestamp (`Y-m-d H:i:s`) instead of by date, so almost every transfer landed in its own bucket — the chart showed one skinny bar per transfer (always height `1`) instead of a daily volume trend.
-- Fix: group by date only (`Y-m-d`), so multiple transfers on the same day now stack into one bar.
-- Applied to both the inline chart and its "Expand Graph" modal version (`resources/views/warehouse_layout.blade.php`).
+### Added
 
-## 2026-07-23
+- Guest-only login page and POST login flow
+- POST/CSRF logout with session invalidation
+- Remember-me support and native login throttling
+- Environment-driven, repeatable initial-user seeder
+- Shared authenticated user/logout UI and AJAX expiry handling
+- Authentication, route-security, identity-spoofing, CSRF, seeder, and ERP
+  regression tests
+- Authentication architecture, identity map, rollback plan, ADR, and developer
+  handoff documentation
 
-### Separated into its own page
-- Added standalone `/alerts` page — moved out of the tabbed dashboard SPA.
-- New route (`inventory.alerts`), new controller method (`alertsPage()`), new view (`alerts-page.blade.php`).
-- Updated all sidebar nav links across the app to point to the new page.
-- Removed the old in-SPA alerts tab and its wiring from `submodule.blade.php`.
+### Changed
 
-### Removed manual Acknowledge / Resolve
-- Active Stock Alerts table is now read-only (Item / Type / Severity / Qty-Threshold only).
-- Removed `alertsAcknowledge()` / `alertsResolve()` (JS), their controller methods, and their routes.
-- Alert lifecycle (create → auto-resolve) is untouched on the backend.
+- All ERP pages, data endpoints, and mutations now require `auth`
+- All human actor fields now use the authenticated user's name
+- AJAX requests negotiate JSON and redirect safely after 401/419
+- Stock/warehouse mutation errors no longer expose raw exception messages
+- Project setup instructions now use non-destructive migrations
 
-### Fixed stale alerts
-- Root cause: `stock:check-levels` wasn't triggered everywhere `qty` could change.
-- Added the missing trigger to: Warehouse Layout transfers, Stock Movement approvals, Inventory ADD/EDIT/DELETE approvals.
-- Alerts (including Overstock) now clear themselves immediately when the underlying condition is fixed — no manual click, no stale rows.
+### Security
 
-### Fixed the nav badge
-- Badge now counts real `stock_alerts` rows (`status = active`) instead of a separate live low/out-only calculation.
-- Overstock now counts toward the badge (previously excluded).
-- Badge always matches the Active Stock Alerts table exactly.
-- Red = an Out of Stock alert is active. Amber = Low Stock and/or Overstock only.
-- Alerts page updates its own badge instantly from local state after any action, instead of only on page load.
+- Session ID regeneration after login
+- Generic invalid-credential errors
+- Five-attempt email/IP login throttle
+- Browser identity impersonation removed
+- Fake account selectors and fake logout controls removed
 
-**Database impact:** None — no migrations, seeders, or model changes.
-**Features removed:** None — only the manual Acknowledge/Resolve buttons, which were redundant with existing auto-resolve logic.
+### Configuration
+
+Added placeholder-only `INITIAL_ADMIN_NAME`, `INITIAL_ADMIN_EMAIL`, and
+`INITIAL_ADMIN_PASSWORD` keys. Database sessions remain the default.
+
+### Migrations
+
+No new migration. Existing `users` and `sessions` tables are reused; ERP actor
+columns remain strings.
+
+### Upgrade
+
+1. Back up the configured database.
+2. Install dependencies and update `.env.example`-derived configuration.
+3. Run `php artisan optimize:clear` and non-destructive `php artisan migrate`.
+4. Set initial-user variables and run the dedicated seeder if no user exists.
+5. Run tests, route audit, Pint, and the frontend build.
+
+### Known limitations
+
+- No RBAC or maker-checker separation
+- No registration, password-reset UI, account UI, email verification, or 2FA
+- Legacy actor names are strings rather than user foreign keys
+- Login throttling is not a permanent account lockout

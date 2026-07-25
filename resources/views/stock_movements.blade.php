@@ -222,11 +222,9 @@
                 </div>
                 <div>
                     <label class="block font-semibold text-gray-600 mb-1">Log Created By</label>
-                    <select id="formUser" class="w-full border border-gray-300 rounded-lg px-3 py-2 bg-white focus:ring-2 focus:ring-navy focus:outline-none">
-                        <option value="Admin 1">Admin 1</option>
-                        <option value="Admin 2">Admin 2</option>
-                        <option value="Admin 3">Admin 3</option>
-                    </select>
+                    <div class="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 font-semibold text-gray-700">
+                        {{ auth()->user()->name }}
+                    </div>
                 </div>
             </div>
 
@@ -399,9 +397,6 @@
         })
         .then(res => res.json())
         .then(data => {
-            // DEBUG: See exactly what the backend returned
-            console.log("Backend Response:", data); 
-
             if (data.success) {
                 fetchDashboardData();
             } else {
@@ -489,7 +484,6 @@
         const date = document.getElementById('formDate').value;
         const partId = document.getElementById('formItem').value;
         const type = document.getElementById('formType').value;
-        const user = document.getElementById('formUser').value;
         const qty = parseInt(document.getElementById('formQty').value);
         let note = document.getElementById('formNote').value;
 
@@ -511,8 +505,7 @@
                 part_id: partId,
                 type: type,
                 qty: qty,
-                note: note,
-                user: user
+                note: note
             })
         })
         .then(res => res.json())

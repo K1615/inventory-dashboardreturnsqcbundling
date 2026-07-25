@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'ERP Inventory Management System')</title>
     
     <!-- Tailwind CSS CDN -->
@@ -22,6 +23,7 @@
             }
         }
     </script>
+    @include('partials.auth-fetch')
 </head>
 <body class="bg-gray-50 text-gray-800 font-sans min-h-screen">
 

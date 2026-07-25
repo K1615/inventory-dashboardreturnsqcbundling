@@ -286,14 +286,6 @@
         // Global CSRF Token config for safe Laravel requests
         const CSRF_TOKEN = "{{ csrf_token() }}";
 
-        let currentAdminIndex = 0;
-        function getNextAdmin() {
-            const admins = ["Admin 1", "Admin 2", "Admin 3"];
-            const selected = admins[currentAdminIndex];
-            currentAdminIndex = (currentAdminIndex + 1) % admins.length;
-            return selected;
-        }
-
         // Hydrate arrays from database query values
         let masterInventory = JSON.parse(document.getElementById("laravelItemsBridge").getAttribute("data-inventory"));
         
@@ -468,7 +460,6 @@
                 headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF_TOKEN },
                 body: JSON.stringify({
                     type: mode === 'add' ? 'ADD' : 'EDIT',
-                    requestor: getNextAdmin(),
                     target_item_id: idVal ? idVal : null, // Removed parseInt()
                     proposed_data: payload
                 })
@@ -490,7 +481,6 @@
                 headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF_TOKEN },
                 body: JSON.stringify({
                     type: 'DELETE',
-                    requestor: getNextAdmin(),
                     target_item_id: targetId,
                     proposed_data: { name: target.name, category: target.category, warehouse: target.warehouse, qty: target.qty, price: target.price, status: target.status, desc: `Reason: [${document.getElementById("deleteReason").value}] - ${document.getElementById("deleteNotes").value}` }
                 })
@@ -549,8 +539,7 @@
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF_TOKEN },
                 body: JSON.stringify({
-                    decision: decision,
-                    reviewer: getNextAdmin()
+                    decision: decision
                 })
             })
             .then(res => res.json())
