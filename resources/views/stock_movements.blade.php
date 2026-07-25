@@ -181,7 +181,7 @@
                         <option value="RAM">RAM</option>
                         <option value="Storage">Storage</option>
                         <option value="Motherboard">Motherboard</option>
-                        <option value="PSU">PSU</option>
+                        <option value="Power Supply">Power Supply</option>
                     </select>
                 </div>
             </div>
