@@ -1,4 +1,7 @@
 <?php
+// DESTINATION: inventory-dashboardreturnsqcbundling/app/Services/AutoReorderService.php
+// (REPLACE existing file with this — additions are the Http import and the
+// try/catch block inside evaluate() that syncs the draft to Procurement)
 
 namespace App\Services;
 
@@ -6,6 +9,7 @@ use App\Models\ApprovalRequest;
 use App\Models\StockAlert;
 use App\Models\SystemLog;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 
 class AutoReorderService
 {
@@ -81,6 +85,32 @@ class AutoReorderService
                 'user' => 'Auto-Reorder System',
                 'action' => "Auto-reorder triggered: created draft PO #{$draft->reqId} for {$item->name} ({$item->id}) — qty {$qty} — {$alert->severity} {$alert->type} alert.",
             ]);
+
+            // Send this draft reorder to the Procurement system via API.
+            try {
+                Http::withHeaders([
+                    'X-API-Key' => config('services.procurement.key'),
+                ])->post(config('services.procurement.url'), [
+                    'inventory_reorder_id' => (string) $draft->reqId,
+                    'item_name'            => $item->name,
+                    'qty'                  => $qty,
+                    'supplier'             => $draft->supplier,
+                    'priority'             => $alert->severity,
+                    'justification'        => $draft->details,
+                    'requestor'            => 'Inventory Auto-Reorder System',
+                    'dept'                 => $draft->warehouse,
+                ]);
+
+                SystemLog::create([
+                    'user' => 'Auto-Reorder System',
+                    'action' => "Synced draft PO #{$draft->reqId} to Procurement.",
+                ]);
+            } catch (\Exception $e) {
+                SystemLog::create([
+                    'user' => 'Auto-Reorder System',
+                    'action' => "Failed to sync draft PO #{$draft->reqId} to Procurement: " . $e->getMessage(),
+                ]);
+            }
 
             $handledThisRun[] = $item->id;
             

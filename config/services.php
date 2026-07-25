@@ -1,6 +1,13 @@
 <?php
+// DESTINATION: inventory-dashboardreturnsqcbundling/config/services.php
+// (REPLACE existing file with this — only addition is the 'procurement' block below)
 
 return [
+
+    'procurement' => [
+        'url' => env('PROCUREMENT_API_URL'),
+        'key' => env('PROCUREMENT_API_KEY'),
+    ],
 
     /*
     |--------------------------------------------------------------------------
