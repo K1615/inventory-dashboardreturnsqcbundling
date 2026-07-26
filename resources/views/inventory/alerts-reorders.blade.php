@@ -23,12 +23,12 @@
                     </div>
                     <div class="p-3 bg-amber-50 text-amber-500 rounded-lg"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg></div>
                 </div>
-                <div onclick="alertsApplyQuickFilter('Overstock')" class="bg-white p-5 rounded-xl border-2 border-transparent hover:border-blue-500 cursor-pointer shadow-sm flex items-center justify-between transition group">
+                <div onclick="alertsApplyQuickFilter('Overstock')" class="bg-white p-5 rounded-xl border-2 border-transparent hover:border-amber-500 cursor-pointer shadow-sm flex items-center justify-between transition group">
                     <div>
-                        <p class="text-xs font-semibold uppercase tracking-wider text-gray-400 group-hover:text-blue-500">Overstock</p>
+                        <p class="text-xs font-semibold uppercase tracking-wider text-gray-400 group-hover:text-amber-500">Overstock</p>
                         <h3 class="text-2xl font-bold text-navyBlue mt-1" id="alerts-over-count">0</h3>
                     </div>
-                    <div class="p-3 bg-blue-50 text-blue-500 rounded-lg"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg></div>
+                    <div class="p-3 bg-amber-50 text-amber-500 rounded-lg"><svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg></div>
                 </div>
             </div>
 
@@ -117,6 +117,9 @@
                     </table>
                 </div>
                 <div id="alerts-no-results" class="hidden p-8 text-center text-gray-400">No records found.</div>
+                <div id="alerts-table-toggle-wrap" class="hidden border-t border-gray-100 px-4 py-3 text-center">
+                    <button type="button" id="alerts-table-toggle-btn" onclick="alertsToggleTableExpanded()" class="text-xs font-semibold text-navyBlue hover:underline"></button>
+                </div>
             </div>
         </section>
 
@@ -171,6 +174,13 @@
     // ALERTS & REORDERS SUBMODULE
     // ==========================================
     let alertsStatusFilter = "all";
+    const ALERTS_TABLE_COLLAPSED_LIMIT = 8;
+    let alertsTableExpanded = false;
+
+    window.alertsToggleTableExpanded = function() {
+        alertsTableExpanded = !alertsTableExpanded;
+        alertsRenderTable();
+    }
 
     function alertsGetStatus(item) {
         // FIX: Look for item.qty instead of item.stock
@@ -188,13 +198,14 @@
         switch (status) {
             case "Out of Stock": return `<span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-red-100 text-red-700">Out of Stock</span>`;
             case "Low Stock": return `<span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-700">Low Stock</span>`;
-            case "Overstock": return `<span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-700">Overstock</span>`;
+            case "Overstock": return `<span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-700">Overstock</span>`;
             default: return `<span class="px-2 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-700">Normal</span>`;
         }
     }
 
     window.alertsApplyQuickFilter = function(status) {
         alertsStatusFilter = status;
+        alertsTableExpanded = false;
         document.getElementById('alerts-status-filter').value = status === 'all' ? 'all' : status;
         alertsRenderTable();
     }
@@ -232,16 +243,36 @@
 
         const tbody = document.getElementById('alerts-inventory-table-body');
         const noResults = document.getElementById('alerts-no-results');
+        const toggleWrap = document.getElementById('alerts-table-toggle-wrap');
+        const toggleBtn = document.getElementById('alerts-table-toggle-btn');
         if (!tbody) return;
 
         if (items.length === 0) {
             tbody.innerHTML = '';
             if (noResults) noResults.classList.remove('hidden');
+            if (toggleWrap) toggleWrap.classList.add('hidden');
             return;
         }
         if (noResults) noResults.classList.add('hidden');
 
-        tbody.innerHTML = items.map(item => {
+        const shouldCollapse = items.length > ALERTS_TABLE_COLLAPSED_LIMIT;
+        const visibleItems = (shouldCollapse && !alertsTableExpanded)
+            ? items.slice(0, ALERTS_TABLE_COLLAPSED_LIMIT)
+            : items;
+
+        if (toggleWrap && toggleBtn) {
+            if (shouldCollapse) {
+                toggleWrap.classList.remove('hidden');
+                const hiddenCount = items.length - ALERTS_TABLE_COLLAPSED_LIMIT;
+                toggleBtn.innerText = alertsTableExpanded
+                    ? 'Show less'
+                    : `Show ${hiddenCount} more item${hiddenCount > 1 ? 's' : ''} (${items.length} total)`;
+            } else {
+                toggleWrap.classList.add('hidden');
+            }
+        }
+
+        tbody.innerHTML = visibleItems.map(item => {
             const status = alertsGetStatus(item);
             // Safely escape the name for the PO modal button
             const safeItemName = (item.name || '').replace(/'/g, "\\'");
@@ -271,9 +302,11 @@
                         </label>
                     </td>
                     <td class="py-3 px-4 text-right">
-                        <button onclick="alertsOpenPOModal('${item.id}', '${safeItemName}')" class="px-2.5 py-1 text-xs font-semibold rounded bg-blue-50 text-navyBlue hover:bg-navyBlue hover:text-white border border-blue-200 transition">
+                        ${status === 'Overstock'
+                            ? `<span class="px-2.5 py-1 text-xs font-semibold rounded bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed" title="This item is overstocked — purchase orders are disabled until stock drops below the max limit.">Overstocked</span>`
+                            : `<button onclick="alertsOpenPOModal('${item.id}', '${safeItemName}')" class="px-2.5 py-1 text-xs font-semibold rounded bg-blue-50 text-navyBlue hover:bg-navyBlue hover:text-white border border-blue-200 transition">
                             Create PO
-                        </button>
+                        </button>`}
                     </td>
                 </tr>`;
         }).join('');
@@ -480,7 +513,9 @@
         };
 
         const res = await fetch('/inventory/api/submit-po', { method: 'POST', headers, body: JSON.stringify(payload) });
-        appState = await res.json();
+        const data = await res.json();
+        if (data.success === false) { alert(data.message || 'Operation failed'); return; }
+        appState = data;
         alertsClosePOModal();
         alertsRenderAll();
         try { refreshAllUI(); } catch(e) {}

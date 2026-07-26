@@ -125,6 +125,24 @@ class InventorySubmoduleController extends Controller
             'itemsArray' => 'required|array',
         ]);
 
+        // Block ordering any item that is currently overstocked (qty already
+        // above its max limit) — matches the UI, which disables the
+        // "Create PO" button for these items, but this re-checks server-side
+        // in case the request bypasses the UI entirely.
+        foreach ($request->itemsArray as $row) {
+            if (!isset($row['id'])) continue;
+
+            $item = Item::find($row['id']);
+            if (!$item) continue;
+
+            if ($item->maxLimit > 0 && $item->qty > $item->maxLimit) {
+                return response()->json([
+                    'success' => false,
+                    'message' => "Cannot create a purchase order for \"{$item->name}\" — it is currently overstocked (qty {$item->qty} exceeds max limit {$item->maxLimit}).",
+                ], 400);
+            }
+        }
+
         $newRequest = ApprovalRequest::create([
             'timestamp' => now()->format('Y-m-d H:i'),
             'requester' => self::ACTING_USER,

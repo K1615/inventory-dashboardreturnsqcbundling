@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Item;
 use App\Models\StockMovement; // Your newly seeded model!
+use App\Models\SystemLog;
 use Illuminate\Support\Facades\Artisan;
 
 
@@ -73,6 +74,12 @@ class StockMovementController extends Controller
                 'status'  => 'Pending' // Explicitly set status so the DB doesn't crash
             ]);
 
+            $item = Item::find($request->part_id);
+            SystemLog::create([
+                'user' => $request->user ?? 'Warehouse Manager',
+                'action' => "Created a {$request->type} movement (#{$request->tx_id}) for " . ($item->name ?? $request->part_id) . " — qty {$request->qty}. Awaiting approval.",
+            ]);
+
             // Return the success response the frontend fetch() expects
             return response()->json([
                 'success' => true
@@ -103,9 +110,9 @@ class StockMovementController extends Controller
             }
             
             // If it's a fresh Pending request being approved, do the math
+            $item = Item::find($movement->item_id);
+
             if ($newStatus === 'Approved') {
-                $item = Item::find($movement->item_id);
-                
                 if ($item) {
                     if ($movement->type === 'Stock-In' || $movement->type === 'Product Return') {
                         $item->qty += $movement->qty;
@@ -117,6 +124,11 @@ class StockMovementController extends Controller
                             $movement->status = 'Voided';
                             $movement->note = $movement->note . ' (System Auto-Void: Insufficient stock)';
                             $movement->save();
+
+                            SystemLog::create([
+                                'user' => 'System',
+                                'action' => "Auto-voided Stock-Out movement #{$movement->tx_id} for {$item->name} — insufficient stock (requested {$movement->qty}, had {$item->qty}).",
+                            ]);
 
                             return response()->json([
                                 'success' => false,
@@ -134,6 +146,19 @@ class StockMovementController extends Controller
             // Apply the requested status (Approved or manually Voided) and save
             $movement->status = $newStatus;
             $movement->save();
+
+            $itemName = $item->name ?? $movement->item_id;
+            if ($newStatus === 'Approved') {
+                SystemLog::create([
+                    'user' => 'Warehouse Manager',
+                    'action' => "Approved {$movement->type} movement #{$movement->tx_id} for {$itemName} — qty {$movement->qty}. New stock: " . ($item->qty ?? 'n/a') . ".",
+                ]);
+            } else {
+                SystemLog::create([
+                    'user' => 'Warehouse Manager',
+                    'action' => "Voided {$movement->type} movement #{$movement->tx_id} for {$itemName}.",
+                ]);
+            }
 
             // Recalculate alerts now that qty may have changed — otherwise
             // an alert that's no longer true after this movement (e.g. an

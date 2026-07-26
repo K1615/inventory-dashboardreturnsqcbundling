@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Models\Item;
 use App\Models\StockMovementRequest;
 use App\Models\AuditMovementLog;
+use App\Models\SystemLog;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Artisan;
@@ -94,6 +95,11 @@ class WarehouseLayoutController extends Controller
                 'status' => 'Pending'
             ]);
 
+            SystemLog::create([
+                'user' => $request->requester ?? 'Warehouse Manager',
+                'action' => "Requested a transfer of {$request->qty}x {$item->name} from {$item->warehouse} to {$request->toWh}. Awaiting approval.",
+            ]);
+
             return response()->json(['success' => true]);
         } catch (\Exception $e) {
             return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
@@ -120,6 +126,11 @@ class WarehouseLayoutController extends Controller
                 ]);
             }
 
+            SystemLog::create([
+                'user' => $request->requester ?? 'Warehouse Manager',
+                'action' => "Requested a batch transfer of " . count($request->items) . " item(s) from {$request->srcWh} to {$request->targetWh}. Awaiting approval.",
+            ]);
+
             return response()->json(['success' => true]);
         } catch (\Exception $e) {
             return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
@@ -144,6 +155,13 @@ class WarehouseLayoutController extends Controller
             if ($request->status === 'void') {
                 $movementRequest->status = 'Voided';
                 $movementRequest->save();
+
+                $itemName = optional(Item::find($movementRequest->item_id))->name ?? $movementRequest->item_id;
+                SystemLog::create([
+                    'user' => 'Warehouse Manager',
+                    'action' => "Voided warehouse transfer request #{$movementRequest->id} for {$itemName}.",
+                ]);
+
                 return response()->json(['success' => true]);
             }
 
@@ -155,6 +173,12 @@ class WarehouseLayoutController extends Controller
                 if ($sourceItem->qty < $movementRequest->qty) {
                     $movementRequest->status = 'Voided';
                     $movementRequest->save();
+
+                    SystemLog::create([
+                        'user' => 'System',
+                        'action' => "Auto-voided warehouse transfer request #{$movementRequest->id} for {$sourceItem->name} — insufficient stock at source (requested {$movementRequest->qty}, had {$sourceItem->qty}).",
+                    ]);
+
                     return response()->json([
                         'success' => false, 
                         'message' => 'Action Denied: Insufficient stock at source. Request has been automatically voided.'
@@ -193,6 +217,11 @@ class WarehouseLayoutController extends Controller
                 // Step C: Mark the request as complete
                 $movementRequest->status = 'Approved';
                 $movementRequest->save();
+
+                SystemLog::create([
+                    'user' => 'Warehouse Manager',
+                    'action' => "Approved transfer of {$movementRequest->qty}x {$sourceItem->name} from {$movementRequest->from_wh} to {$movementRequest->to_wh}.",
+                ]);
 
                 // Step D: Recalculate alerts now that quantities at both the
                 // source and destination have changed. Without this, an
