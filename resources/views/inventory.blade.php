@@ -68,7 +68,7 @@
                 <h2 class="text-lg font-bold text-navyBlue">Current Parts List</h2>
                 <p class="text-xs text-gray-500">View and manage all components verified in stock.</p>
             </div>
-            <button onclick="openFormModal('add')" class="bg-emeraldGreen text-white font-semibold px-4 py-2 rounded-lg shadow hover:bg-emeraldGreen/90 transition text-sm self-start sm:self-auto">+ Add New Product</button>
+            <button onclick="openFormModal('add')" id="addNewProductBtn" class="bg-emeraldGreen text-white font-semibold px-4 py-2 rounded-lg shadow hover:bg-emeraldGreen/90 transition text-sm self-start sm:self-auto @unless(\App\Support\Roles::can('create_po')) opacity-40 cursor-not-allowed @endunless" @unless(\App\Support\Roles::can('create_po')) disabled title="Requires Manager access" @endunless>+ Add New Product</button>
         </div>
 
         <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
@@ -286,13 +286,7 @@
         // Global CSRF Token config for safe Laravel requests
         const CSRF_TOKEN = "{{ csrf_token() }}";
 
-        let currentAdminIndex = 0;
-        function getNextAdmin() {
-            const admins = ["Admin 1", "Admin 2", "Admin 3"];
-            const selected = admins[currentAdminIndex];
-            currentAdminIndex = (currentAdminIndex + 1) % admins.length;
-            return selected;
-        }
+        // Requestor/reviewer attribution now comes from the real logged-in session (window.APP_USER_NAME), not a fake round-robin.
 
         // Hydrate arrays from database query values
         let masterInventory = JSON.parse(document.getElementById("laravelItemsBridge").getAttribute("data-inventory"));
@@ -359,8 +353,17 @@
                 // Change item.location to item.zone
                 row.querySelector('.data-loc').innerText = item.zone || 'Unassigned';
                 row.querySelector('.view-btn').onclick = () => viewItemDetails(item.id);
-                row.querySelector('.edit-btn').onclick = () => openFormModal('edit', item.id);
-                row.querySelector('.del-btn').onclick = () => openDeleteModal(item.id);
+                if (window.canDo && window.canDo('create_po')) {
+                    row.querySelector('.edit-btn').onclick = () => openFormModal('edit', item.id);
+                    row.querySelector('.del-btn').onclick = () => openDeleteModal(item.id);
+                } else {
+                    ['.edit-btn', '.del-btn'].forEach(sel => {
+                        const el = row.querySelector(sel);
+                        el.disabled = true;
+                        el.title = 'Requires Manager access';
+                        el.classList.add('opacity-40', 'cursor-not-allowed');
+                    });
+                }
                 tableBody.appendChild(row);
             });
         }
@@ -468,7 +471,7 @@
                 headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF_TOKEN },
                 body: JSON.stringify({
                     type: mode === 'add' ? 'ADD' : 'EDIT',
-                    requestor: getNextAdmin(),
+                    requestor: window.APP_USER_NAME,
                     target_item_id: idVal ? idVal : null, // Removed parseInt()
                     proposed_data: payload
                 })
@@ -490,7 +493,7 @@
                 headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF_TOKEN },
                 body: JSON.stringify({
                     type: 'DELETE',
-                    requestor: getNextAdmin(),
+                    requestor: window.APP_USER_NAME,
                     target_item_id: targetId,
                     proposed_data: { name: target.name, category: target.category, warehouse: target.warehouse, qty: target.qty, price: target.price, status: target.status, desc: `Reason: [${document.getElementById("deleteReason").value}] - ${document.getElementById("deleteNotes").value}` }
                 })
@@ -526,7 +529,7 @@
                         <div class="text-[10px] italic text-gray-500 bg-white border border-gray-100 p-1.5 rounded mt-1 shadow-inner max-h-16 overflow-y-auto contextual-desc"></div>
                     </td>
                     <td class="px-4 py-3 text-right whitespace-nowrap">
-                        <select class="text-xs px-2 py-1 border border-gray-300 rounded bg-white font-medium focus:outline-none select-act">
+                        <select class="text-xs px-2 py-1 border border-gray-300 rounded bg-white font-medium focus:outline-none select-act" ${window.canDo && window.canDo('approve_void_pipeline') ? '' : 'disabled title="Requires Manager access"'} style="${window.canDo && window.canDo('approve_void_pipeline') ? '' : 'opacity:.4;cursor:not-allowed;'}">
                             <option value="" disabled selected>Choose...</option>
                             <option value="approve" class="text-emeraldGreen font-semibold">Approve</option>
                             <option value="void" class="text-red-500 font-semibold">Void</option>
@@ -550,7 +553,7 @@
                 headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF_TOKEN },
                 body: JSON.stringify({
                     decision: decision,
-                    reviewer: getNextAdmin()
+                    reviewer: window.APP_USER_NAME
                 })
             })
             .then(res => res.json())

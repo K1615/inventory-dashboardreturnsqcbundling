@@ -26,14 +26,13 @@ class InventoryController extends Controller
     {
         $validated = $request->validate([
             'type' => 'required|in:ADD,EDIT,DELETE',
-            'requestor' => 'required|string',
             'target_item_id' => 'nullable|string', // <-- ALLOWS STRING IDs
             'proposed_data' => 'required|array'
         ]);
 
         $newRequest = InventoryRequest::create([
             'type' => $validated['type'],
-            'requestor' => $validated['requestor'],
+            'requestor' => \App\Support\Roles::currentNameWithRole(),
             'target_item_id' => $validated['target_item_id'] ?? null,
             'proposed_data' => $validated['proposed_data'],
             'outcome' => 'PENDING'
@@ -47,8 +46,8 @@ class InventoryController extends Controller
     {
         $validated = $request->validate([
             'decision' => 'required|in:approve,void',
-            'reviewer' => 'required|string'
         ]);
+        $reviewer = \App\Support\Roles::currentNameWithRole();
 
         $invRequest = InventoryRequest::findOrFail($id);
         
@@ -74,7 +73,7 @@ class InventoryController extends Controller
                 ]);
 
                 SystemLog::create([
-                    'user' => $validated['reviewer'],
+                    'user' => $reviewer,
                     'action' => "Added new item {$newItem->name} ({$newItem->id}) — qty {$newItem->qty}.",
                 ]);
             } elseif ($invRequest->type === 'EDIT') {
@@ -91,7 +90,7 @@ class InventoryController extends Controller
                 ]);
 
                 SystemLog::create([
-                    'user' => $validated['reviewer'],
+                    'user' => $reviewer,
                     'action' => "Edited item {$item->name} ({$item->id}).",
                 ]);
             } elseif ($invRequest->type === 'DELETE') {
@@ -101,7 +100,7 @@ class InventoryController extends Controller
                 $item->delete();
 
                 SystemLog::create([
-                    'user' => $validated['reviewer'],
+                    'user' => $reviewer,
                     'action' => "Deleted item {$itemName} ({$itemId}).",
                 ]);
             }
@@ -117,12 +116,12 @@ class InventoryController extends Controller
             $invRequest->outcome = 'VOIDED';
 
             SystemLog::create([
-                'user' => $validated['reviewer'],
+                'user' => $reviewer,
                 'action' => "Voided a {$invRequest->type} item request (#{$invRequest->id}).",
             ]);
         }
 
-        $invRequest->reviewer = $validated['reviewer'];
+        $invRequest->reviewer = $reviewer;
         $invRequest->save();
 
         return response()->json(['success' => true]);

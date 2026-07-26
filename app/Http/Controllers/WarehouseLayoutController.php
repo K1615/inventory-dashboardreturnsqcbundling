@@ -82,10 +82,11 @@ class WarehouseLayoutController extends Controller
     {
         try {
             $item = Item::findOrFail($request->itemId);
+            $actingUser = \App\Support\Roles::currentNameWithRole();
 
             StockMovementRequest::create([
                 'item_id' => $item->id,
-                'requester' => $request->requester,
+                'requester' => $actingUser,
                 'from_wh' => $item->warehouse,
                 'from_zone' => $item->zone,
                 'to_wh' => $request->toWh,
@@ -96,7 +97,7 @@ class WarehouseLayoutController extends Controller
             ]);
 
             SystemLog::create([
-                'user' => $request->requester ?? 'Warehouse Manager',
+                'user' => $actingUser,
                 'action' => "Requested a transfer of {$request->qty}x {$item->name} from {$item->warehouse} to {$request->toWh}. Awaiting approval.",
             ]);
 
@@ -110,12 +111,13 @@ class WarehouseLayoutController extends Controller
     public function storeBatchRequest(Request $request)
     {
         try {
+            $actingUser = \App\Support\Roles::currentNameWithRole();
             foreach ($request->items as $reqItem) {
                 $item = Item::findOrFail($reqItem['id']);
                 
                 StockMovementRequest::create([
                     'item_id' => $item->id,
-                    'requester' => $request->requester,
+                    'requester' => $actingUser,
                     'from_wh' => $request->srcWh,
                     'from_zone' => $item->zone,
                     'to_wh' => $request->targetWh,
@@ -127,7 +129,7 @@ class WarehouseLayoutController extends Controller
             }
 
             SystemLog::create([
-                'user' => $request->requester ?? 'Warehouse Manager',
+                'user' => $actingUser,
                 'action' => "Requested a batch transfer of " . count($request->items) . " item(s) from {$request->srcWh} to {$request->targetWh}. Awaiting approval.",
             ]);
 
@@ -158,7 +160,7 @@ class WarehouseLayoutController extends Controller
 
                 $itemName = optional(Item::find($movementRequest->item_id))->name ?? $movementRequest->item_id;
                 SystemLog::create([
-                    'user' => 'Warehouse Manager',
+                    'user' => \App\Support\Roles::currentNameWithRole(),
                     'action' => "Voided warehouse transfer request #{$movementRequest->id} for {$itemName}.",
                 ]);
 
@@ -219,7 +221,7 @@ class WarehouseLayoutController extends Controller
                 $movementRequest->save();
 
                 SystemLog::create([
-                    'user' => 'Warehouse Manager',
+                    'user' => \App\Support\Roles::currentNameWithRole(),
                     'action' => "Approved transfer of {$movementRequest->qty}x {$sourceItem->name} from {$movementRequest->from_wh} to {$movementRequest->to_wh}.",
                 ]);
 

@@ -162,7 +162,9 @@
                 </div>
                 <div class="flex justify-end space-x-3 pt-2">
                     <button onclick="alertsClosePOModal()" class="px-4 py-2 border border-gray-300 rounded-lg text-xs font-semibold text-gray-600 hover:bg-gray-100 transition">Cancel</button>
-                    <button onclick="alertsSubmitPOForm()" class="px-4 py-2 bg-emeraldGreen text-white rounded-lg text-xs font-semibold shadow hover:bg-emeraldGreen/90 transition">Submit to Pipeline</button>
+                    <button id="alertsSubmitPOBtn" onclick="alertsSubmitPOForm()"
+                        @unless(\App\Support\Roles::can('create_po')) disabled title="Requires Manager access" @endunless
+                        class="px-4 py-2 bg-emeraldGreen text-white rounded-lg text-xs font-semibold shadow hover:bg-emeraldGreen/90 transition @unless(\App\Support\Roles::can('create_po')) opacity-40 cursor-not-allowed @endunless">Submit to Pipeline</button>
                 </div>
             </div>
         </div>
@@ -286,17 +288,17 @@
                     <td class="py-3 px-2 text-center font-bold text-gray-900">${item.qty}</td>
                     <td class="py-3 px-3 text-center">
                         <label class="sr-only" for="alerts-min-${item.id}">Min limit for ${item.name}</label>
-                        <input type="number" id="alerts-min-${item.id}" value="${item.minLimit}" min="0" onchange="alertsUpdateLimit('${item.id}', 'min', this.value)" class="w-16 border border-gray-300 rounded text-center px-1 py-0.5 text-xs">
+                        <input type="number" id="alerts-min-${item.id}" value="${item.minLimit}" min="0" onchange="alertsUpdateLimit('${item.id}', 'min', this.value)" ${canDo('edit_limits') ? '' : 'disabled title="Requires Manager access"'} class="w-16 border border-gray-300 rounded text-center px-1 py-0.5 text-xs ${canDo('edit_limits') ? '' : 'opacity-40 cursor-not-allowed bg-gray-100'}">
                     </td>
                     <td class="py-3 px-3 text-center">
                         <label class="sr-only" for="alerts-max-${item.id}">Max limit for ${item.name}</label>
-                        <input type="number" id="alerts-max-${item.id}" value="${item.maxLimit}" min="0" onchange="alertsUpdateLimit('${item.id}', 'max', this.value)" class="w-16 border border-gray-300 rounded text-center px-1 py-0.5 text-xs">
+                        <input type="number" id="alerts-max-${item.id}" value="${item.maxLimit}" min="0" onchange="alertsUpdateLimit('${item.id}', 'max', this.value)" ${canDo('edit_limits') ? '' : 'disabled title="Requires Manager access"'} class="w-16 border border-gray-300 rounded text-center px-1 py-0.5 text-xs ${canDo('edit_limits') ? '' : 'opacity-40 cursor-not-allowed bg-gray-100'}">
                     </td>
                     <td class="py-3 px-4 text-center">${alertsStatusBadge(status)}</td>
                     <td class="py-3 px-3 text-center">
-                        <label class="relative inline-flex items-center cursor-pointer" title="Auto-create a draft PO when this item hits Low/Out of Stock">
+                        <label class="relative inline-flex items-center ${canDo('edit_limits') ? 'cursor-pointer' : 'cursor-not-allowed opacity-40'}" title="${canDo('edit_limits') ? 'Auto-create a draft PO when this item hits Low/Out of Stock' : 'Requires Manager access'}">
                             <span class="sr-only">Auto-reorder for ${item.name}</span>
-                            <input type="checkbox" class="sr-only peer" ${item.auto_reorder ? 'checked' : ''} onchange="alertsToggleAutoReorder('${item.id}', this.checked)">
+                            <input type="checkbox" class="sr-only peer" ${item.auto_reorder ? 'checked' : ''} ${canDo('edit_limits') ? '' : 'disabled'} onchange="alertsToggleAutoReorder('${item.id}', this.checked)">
                             <div class="w-9 h-5 bg-gray-200 peer-checked:bg-emeraldGreen rounded-full transition-colors"></div>
                             <div class="absolute left-0.5 top-0.5 w-4 h-4 bg-white rounded-full shadow transition-transform peer-checked:translate-x-4"></div>
                         </label>
@@ -304,9 +306,9 @@
                     <td class="py-3 px-4 text-right">
                         ${status === 'Overstock'
                             ? `<span class="px-2.5 py-1 text-xs font-semibold rounded bg-gray-100 text-gray-400 border border-gray-200 cursor-not-allowed" title="This item is overstocked — purchase orders are disabled until stock drops below the max limit.">Overstocked</span>`
-                            : `<button onclick="alertsOpenPOModal('${item.id}', '${safeItemName}')" class="px-2.5 py-1 text-xs font-semibold rounded bg-blue-50 text-navyBlue hover:bg-navyBlue hover:text-white border border-blue-200 transition">
+                            : gatedBtn(`<button onclick="alertsOpenPOModal('${item.id}', '${safeItemName}')" class="px-2.5 py-1 text-xs font-semibold rounded bg-blue-50 text-navyBlue hover:bg-navyBlue hover:text-white border border-blue-200 transition">
                             Create PO
-                        </button>`}
+                        </button>`, 'create_po')}
                     </td>
                 </tr>`;
         }).join('');
@@ -374,13 +376,13 @@
 
             let actionTray = `<span class="text-xs text-gray-400 italic">Completed</span>`;
             if (req.status === "Draft") {
-                actionTray = `
-                    <button onclick="alertsSubmitDraft(${req.reqId})" class="px-2 py-0.5 bg-navyBlue text-white rounded font-bold hover:bg-blue-800 text-[11px]">Submit to Pipeline</button>
-                    <button onclick="alertsDiscardDraft(${req.reqId})" class="px-2 py-0.5 bg-red-500 text-white rounded font-bold hover:bg-red-600 text-[11px] ml-1">Discard</button>`;
+                actionTray =
+                    gatedBtn(`<button onclick="alertsSubmitDraft(${req.reqId})" class="px-2 py-0.5 bg-navyBlue text-white rounded font-bold hover:bg-blue-800 text-[11px]">Submit to Pipeline</button>`, 'create_po') +
+                    gatedBtn(`<button onclick="alertsDiscardDraft(${req.reqId})" class="px-2 py-0.5 bg-red-500 text-white rounded font-bold hover:bg-red-600 text-[11px] ml-1">Discard</button>`, 'discard_draft');
             } else if (req.status === "Pending") {
-                actionTray = `
-                    <button onclick="alertsProcessPipeline(${req.reqId}, 'Approved')" class="px-2 py-0.5 bg-emeraldGreen text-white rounded font-bold hover:bg-emeraldGreen/90 text-[11px]">Approve</button>
-                    <button onclick="alertsProcessPipeline(${req.reqId}, 'Voided')" class="px-2 py-0.5 bg-red-500 text-white rounded font-bold hover:bg-red-600 text-[11px] ml-1">Void</button>`;
+                actionTray =
+                    gatedBtn(`<button onclick="alertsProcessPipeline(${req.reqId}, 'Approved')" class="px-2 py-0.5 bg-emeraldGreen text-white rounded font-bold hover:bg-emeraldGreen/90 text-[11px]">Approve</button>`, 'approve_void_pipeline') +
+                    gatedBtn(`<button onclick="alertsProcessPipeline(${req.reqId}, 'Voided')" class="px-2 py-0.5 bg-red-500 text-white rounded font-bold hover:bg-red-600 text-[11px] ml-1">Void</button>`, 'approve_void_pipeline');
             } else if (req.status === "Ordered") {
                 actionTray = `<button onclick="alertsMarkReceived(${req.reqId})" class="px-2 py-0.5 bg-blue-600 text-white rounded font-bold hover:bg-blue-700 text-[11px]">Mark as Received</button>`;
             }

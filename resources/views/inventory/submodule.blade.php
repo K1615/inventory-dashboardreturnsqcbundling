@@ -62,7 +62,6 @@
             @endphp
 
             <nav class="p-4 flex flex-col gap-1.5 overflow-y-auto flex-1">
-                
                 <!-- Dashboard -->
                 <a href="{{ route('inventory.dashboard', ['tab' => 'dashboard']) }}" 
                 onclick="if(typeof handleJsNav === 'function') handleJsNav(event, 'dashboard')" id="nav-dashboard" 
@@ -113,15 +112,7 @@
         </div>
 
         <!-- User Profile Actions -->
-        <div class="p-4 border-t border-white/10 bg-black/10 flex items-center justify-between text-sm font-semibold shrink-0">
-            <a href="#" class="hover:text-blue-200 transition-colors flex items-center gap-2 py-1 px-2 rounded hover:bg-white/5 text-xs">
-                <span class="w-2 h-2 rounded-full bg-emeraldGreen"></span>
-                Admin Panel
-            </a>
-            <button onclick="alert('Logging out...')" class="hover:text-red-300 text-white/80 transition-colors flex items-center gap-1 py-1 px-2 rounded hover:bg-white/5 text-xs">
-                Logout
-            </button>
-        </div>
+        @include('partials.role-bar')
     </aside>
 
     <!-- Main Content Container -->
@@ -428,22 +419,12 @@
                                 <!-- Populated dynamically -->
                             </select>
                         </div>
-                        <div class="grid grid-cols-2 gap-4">
-                            <div>
-                                <label class="block text-xs font-semibold text-gray-700 mb-1">Source / Origin</label>
-                                <select id="insSource" required class="w-full border border-gray-300 rounded-md p-2 text-sm focus:border-navyBlue outline-none bg-white">
-                                    <option value="Customer Aftersales">Customer Aftersales Return</option>
-                                    <option value="Warehouse Transfer">Warehouse Transfer</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label class="block text-xs font-semibold text-gray-700 mb-1">Operator</label>
-                                <select id="insOp" required class="w-full border border-gray-300 rounded-md p-2 text-sm focus:border-navyBlue outline-none bg-white">
-                                    <option value="admin1">admin1</option>
-                                    <option value="admin2">admin2</option>
-                                    <option value="admin3">admin3</option>
-                                </select>
-                            </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700 mb-1">Source / Origin</label>
+                            <select id="insSource" required class="w-full border border-gray-300 rounded-md p-2 text-sm focus:border-navyBlue outline-none bg-white">
+                                <option value="Customer Aftersales">Customer Aftersales Return</option>
+                                <option value="Warehouse Transfer">Warehouse Transfer</option>
+                            </select>
                         </div>
                         <div>
                             <label class="block text-xs font-semibold text-gray-700 mb-1">Validation Outcome</label>
@@ -489,19 +470,9 @@
                                 </label>
                             </div>
                         </div>
-                        <div class="grid grid-cols-2 gap-4">
-                            <div>
-                                <label class="block text-xs font-semibold text-gray-700 mb-1">Target Manufacturer</label>
-                                <input type="text" id="rmaVendor" required placeholder="e.g. ASUS, Corsair" class="w-full border border-gray-300 rounded-md p-2 text-sm focus:border-navyBlue outline-none">
-                            </div>
-                            <div>
-                                <label class="block text-xs font-semibold text-gray-700 mb-1">Operator</label>
-                                <select id="rmaOp" required class="w-full border border-gray-300 rounded-md p-2 text-sm focus:border-navyBlue outline-none bg-white">
-                                    <option value="admin1">admin1</option>
-                                    <option value="admin2">admin2</option>
-                                    <option value="admin3">admin3</option>
-                                </select>
-                            </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700 mb-1">Target Manufacturer</label>
+                            <input type="text" id="rmaVendor" required placeholder="e.g. ASUS, Corsair" class="w-full border border-gray-300 rounded-md p-2 text-sm focus:border-navyBlue outline-none">
                         </div>
                         <button type="submit" class="w-full bg-navyBlue text-white font-bold py-2.5 rounded-md hover:bg-blue-900 transition-colors mt-2 text-sm">
                             Submit to RMA Approvals
@@ -605,14 +576,6 @@
                     <p class="text-sm text-gray-500 mt-1">Create custom builds or select pre-built packages to request for approval.</p>
                 </div>
                 
-                <div class="bg-white px-4 py-2 rounded-lg border border-gray-200 shadow-sm flex items-center gap-3">
-                    <span class="text-sm font-bold text-navyBlue">Current User:</span>
-                    <select id="userSelector" class="border border-gray-300 rounded text-sm px-2 py-1 focus:outline-none focus:border-emeraldGreen bg-white">
-                        <option value="Admin 1">Admin 1</option>
-                        <option value="Admin 2">Admin 2</option>
-                        <option value="Admin 3">Admin 3</option>
-                    </select>
-                </div>
             </header>
 
             <!-- Bundling Top Section: Custom Builder & Presets -->
@@ -1487,7 +1450,7 @@
         const payload = { 
             itemId: document.getElementById('insItem').value, 
             source: document.getElementById('insSource').value, 
-            op: document.getElementById('insOp').value, 
+            op: window.APP_USER_NAME, 
             outcome: document.getElementById('insOutcome').value 
         };
         const res = await fetch('/inventory/api/inspection', { method: 'POST', headers, body: JSON.stringify(payload) });
@@ -1504,7 +1467,7 @@
         const payload = { 
             itemId: document.getElementById('rmaItem').value, 
             vendor: document.getElementById('rmaVendor').value, 
-            op: document.getElementById('rmaOp').value, 
+            op: window.APP_USER_NAME, 
             reasons: Array.from(checkboxes).map(cb => cb.value).join(', ') 
         };
         const res = await fetch('/inventory/api/rma', { method: 'POST', headers, body: JSON.stringify(payload) });
@@ -1769,7 +1732,7 @@
     document.getElementById('confirmPresetPurchaseBtn').addEventListener('click', async () => {
         const p = bundlingPresets.find(i => i.id === bundlingSelectedPresetId);
         const payload = { 
-            requester: document.getElementById('userSelector').value, 
+            requester: window.APP_USER_NAME, 
             type: 'Pre-built', 
             details: p.name, 
             recipe: p.recipe 
@@ -1829,7 +1792,7 @@
 
     document.getElementById('placeCustomOrderBtn').addEventListener('click', async () => {
         const payload = { 
-            requester: document.getElementById('userSelector').value, 
+            requester: window.APP_USER_NAME, 
             type: 'Custom Build', 
             details: `Assembly (${bundlingPendingCustomIds.length} parts)`, 
             recipe: bundlingPendingCustomIds 
@@ -1862,7 +1825,7 @@
 
             const approveBtn = blocked
                 ? `<button disabled title="Out of stock — cannot approve" class="text-xs bg-gray-300 text-gray-500 font-bold py-1 px-2 rounded cursor-not-allowed">Approve</button>`
-                : `<button onclick="resolveBundle('${req.id}', 'Approved')" class="text-xs bg-emeraldGreen hover:bg-green-600 text-white font-bold py-1 px-2 rounded transition-colors">Approve</button>`;
+                : gatedBtn(`<button onclick="resolveBundle('${req.id}', 'Approved')" class="text-xs bg-emeraldGreen hover:bg-green-600 text-white font-bold py-1 px-2 rounded transition-colors">Approve</button>`, 'approve_void_bundle');
 
             tbody.insertAdjacentHTML('beforeend', `
                 <tr class="border-b border-gray-100 hover:bg-gray-50 transition-colors">
@@ -1875,7 +1838,7 @@
                     <td class="py-2 px-3 text-center">
                         <div class="flex gap-2 justify-center">
                             ${approveBtn}
-                            <button onclick="resolveBundle('${req.id}', 'Voided')" class="text-xs bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-2 rounded transition-colors">Void</button>
+                            ${gatedBtn(`<button onclick="resolveBundle('${req.id}', 'Voided')" class="text-xs bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-2 rounded transition-colors">Void</button>`, 'approve_void_bundle')}
                         </div>
                     </td>
                 </tr>`);
@@ -1907,8 +1870,8 @@
 
     // 1. Missing API caller to approve/void requests
     window.resolveBundle = async function(id, decision) {
-        // Grab the current acting user from the top right dropdown
-        const approver = document.getElementById('userSelector').value;
+        // The approver is always the real logged-in user (from the session), not client-editable
+        const approver = window.APP_USER_NAME;
         
         try {
             const res = await fetch('/inventory/api/resolve-bundle', { 

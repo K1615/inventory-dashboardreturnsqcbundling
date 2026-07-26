@@ -25,7 +25,6 @@
             @endphp
 
             <nav class="p-4 flex flex-col gap-1.5 overflow-y-auto flex-1">
-                
                 <!-- Dashboard -->
                 <a href="{{ route('inventory.dashboard', ['tab' => 'dashboard']) }}" 
                 onclick="if(typeof handleJsNav === 'function') handleJsNav(event, 'dashboard')" id="nav-dashboard" 
@@ -75,20 +74,7 @@
             </nav>
         </div>
 
-        <div class="p-4 border-t border-white/10 bg-black/10 flex items-center justify-between text-sm font-semibold">
-            <div class="flex items-center gap-2 text-xs text-blue-100">
-                <span class="w-2 h-2 rounded-full bg-[#10B981]"></span>
-                <select id="currentUserSession" class="bg-transparent font-bold text-white focus:outline-none cursor-pointer">
-                    <option value="Admin 1" class="text-gray-800">Admin 1</option>
-                    <option value="Admin 2" class="text-gray-800">Admin 2</option>
-                    <option value="Admin 3" class="text-gray-800">Admin 3</option>
-                    <option value="Admin 4" class="text-gray-800">Admin 4</option>
-                </select>
-            </div>
-            <button onclick="alert('Logging out...')" class="hover:text-red-300 text-white/80 transition-colors flex items-center gap-1 py-1 px-2 rounded hover:bg-white/5 text-xs">
-                Logout
-            </button>
-        </div>
+        @include('partials.role-bar')
     </aside>
 
     <!-- Main Workspace Area -->
@@ -559,9 +545,9 @@
                 <td class="py-3 px-6 text-center font-mono text-gray-500">${req.planned_date || 'N/A'}</td>
                 <td class="py-3 px-6 text-right">
                     <div class="inline-flex rounded-lg border border-gray-200 bg-white p-0.5 shadow-xs">
-                        <button onclick="processApproval('${req.id}', 'approve')" class="px-2 py-1 text-[11px] font-bold text-[#10B981] hover:bg-[#10B981]/10 rounded">Approve</button>
+                        ${gatedBtn(`<button onclick="processApproval('${req.id}', 'approve')" class="px-2 py-1 text-[11px] font-bold text-[#10B981] hover:bg-[#10B981]/10 rounded">Approve</button>`, 'approve_void_layout')}
                         <span class="text-gray-200 self-center">|</span>
-                        <button onclick="processApproval('${req.id}', 'void')" class="px-2 py-1 text-[11px] font-bold text-[#EF4444] hover:bg-[#EF4444]/10 rounded">Void</button>
+                        ${gatedBtn(`<button onclick="processApproval('${req.id}', 'void')" class="px-2 py-1 text-[11px] font-bold text-[#EF4444] hover:bg-[#EF4444]/10 rounded">Void</button>`, 'approve_void_layout')}
                     </div>
                 </td>
             `;
@@ -650,7 +636,7 @@
         // REMOVED parseInt()
         const id = document.getElementById('modalItemId').value; 
         const sourceItem = inventoryData.find(i => i.id === id);
-        const currentSelectedAdmin = document.getElementById('currentUserSession').value;
+        const currentSelectedAdmin = window.APP_USER_NAME;
         const toWh = document.getElementById('modalDestWh').value;
         const toZone = document.getElementById('modalDestZone').value;
         const qty = parseInt(document.getElementById('modalDestQty').value);
@@ -727,7 +713,7 @@
         const srcWh = document.getElementById('batchSourceWh').value;
         const targetWh = document.getElementById('batchTargetWh').value;
         const moveDate = document.getElementById('batchMoveDate').value;
-        const currentSelectedAdmin = document.getElementById('currentUserSession').value;
+        const currentSelectedAdmin = window.APP_USER_NAME;
 
         if (srcWh === targetWh) {
             alert("Source and Target warehouses must be different locations.");

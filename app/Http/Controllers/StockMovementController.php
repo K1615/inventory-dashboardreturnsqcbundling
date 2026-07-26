@@ -62,6 +62,8 @@ class StockMovementController extends Controller
     public function store(Request $request)
     {
         try {
+            $actingUser = \App\Support\Roles::currentNameWithRole();
+
             // Create the new log in the database
             StockMovement::create([
                 'tx_id'   => $request->tx_id,
@@ -70,13 +72,13 @@ class StockMovementController extends Controller
                 'type'    => $request->type,
                 'qty'     => $request->qty,
                 'note'    => $request->note,
-                'user'    => $request->user,
+                'user'    => $actingUser,
                 'status'  => 'Pending' // Explicitly set status so the DB doesn't crash
             ]);
 
             $item = Item::find($request->part_id);
             SystemLog::create([
-                'user' => $request->user ?? 'Warehouse Manager',
+                'user' => $actingUser,
                 'action' => "Created a {$request->type} movement (#{$request->tx_id}) for " . ($item->name ?? $request->part_id) . " — qty {$request->qty}. Awaiting approval.",
             ]);
 
@@ -150,12 +152,12 @@ class StockMovementController extends Controller
             $itemName = $item->name ?? $movement->item_id;
             if ($newStatus === 'Approved') {
                 SystemLog::create([
-                    'user' => 'Warehouse Manager',
+                    'user' => \App\Support\Roles::currentNameWithRole(),
                     'action' => "Approved {$movement->type} movement #{$movement->tx_id} for {$itemName} — qty {$movement->qty}. New stock: " . ($item->qty ?? 'n/a') . ".",
                 ]);
             } else {
                 SystemLog::create([
-                    'user' => 'Warehouse Manager',
+                    'user' => \App\Support\Roles::currentNameWithRole(),
                     'action' => "Voided {$movement->type} movement #{$movement->tx_id} for {$itemName}.",
                 ]);
             }
