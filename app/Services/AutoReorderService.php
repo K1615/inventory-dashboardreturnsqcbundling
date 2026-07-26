@@ -88,9 +88,7 @@ class AutoReorderService
 
             // Send this draft reorder to the Procurement system via API.
             try {
-                Http::withHeaders([
-                    'X-API-Key' => config('services.procurement.key'),
-                ])->post(config('services.procurement.url'), [
+                $payload = [
                     'inventory_reorder_id' => (string) $draft->reqId,
                     'item_name'            => $item->name,
                     'qty'                  => $qty,
@@ -99,7 +97,15 @@ class AutoReorderService
                     'justification'        => $draft->details,
                     'requestor'            => 'Inventory Auto-Reorder System',
                     'dept'                 => $draft->warehouse,
-                ]);
+                ];
+
+                // Logs the exact JSON payload to storage/logs/laravel.log
+                // so it can be inspected/demoed.
+                \Log::info('Sending to Procurement:', $payload);
+
+                Http::withHeaders([
+                    'X-API-Key' => config('services.procurement.key'),
+                ])->post(config('services.procurement.url'), $payload);
 
                 SystemLog::create([
                     'user' => 'Auto-Reorder System',

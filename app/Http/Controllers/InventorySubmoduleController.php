@@ -1,4 +1,7 @@
 <?php
+// DESTINATION: inventory-dashboardreturnsqcbundling/app/Http/Controllers/InventorySubmoduleController.php
+// (REPLACE existing file with this — only change is the Procurement sync block
+// added inside submitPO(), so manual POs sync too, not just auto-reorder ones)
 
 // app/Http/Controllers/InventorySubmoduleController.php
 
@@ -8,6 +11,7 @@ use Illuminate\Http\Request;
 use App\Models\{Item, SystemLog, QcInspection, RmaRequest, ReturnsAuditLog, BundleRequest, StockAlert, ApprovalRequest, StockMovement, ShipmentHandoff};
 use App\Services\AutoReorderService;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Http;
 
 class InventorySubmoduleController extends Controller
 {
@@ -160,6 +164,43 @@ class InventorySubmoduleController extends Controller
         }
 
         SystemLog::create(['user' => self::ACTING_USER, 'action' => "Submitted a new purchase order #{$newRequest->reqId} — {$request->details}."]);
+
+        // Send this manual PO's items to Procurement too (same as auto-reorder does).
+        foreach ($request->itemsArray as $itemRow) {
+            if (!isset($itemRow['id'], $itemRow['qty'])) continue;
+
+            $itemModel = Item::find($itemRow['id']);
+            if (!$itemModel) continue;
+
+            try {
+                $payload = [
+                    'inventory_reorder_id' => $newRequest->reqId . '-' . $itemModel->id,
+                    'item_name'            => $itemModel->name,
+                    'qty'                  => $itemRow['qty'],
+                    'supplier'             => $newRequest->supplier,
+                    'priority'             => 'medium',
+                    'justification'        => $newRequest->details,
+                    'requestor'            => self::ACTING_USER,
+                    'dept'                 => $newRequest->warehouse,
+                ];
+
+                \Log::info('Sending to Procurement (manual PO):', $payload);
+
+                Http::withHeaders([
+                    'X-API-Key' => config('services.procurement.key'),
+                ])->post(config('services.procurement.url'), $payload);
+
+                SystemLog::create([
+                    'user' => self::ACTING_USER,
+                    'action' => "Synced manual PO #{$newRequest->reqId} ({$itemModel->name}) to Procurement.",
+                ]);
+            } catch (\Exception $e) {
+                SystemLog::create([
+                    'user' => self::ACTING_USER,
+                    'action' => "Failed to sync manual PO #{$newRequest->reqId} ({$itemModel->name}) to Procurement: " . $e->getMessage(),
+                ]);
+            }
+        }
 
         // ADD THIS LINE HERE
         Artisan::call('stock:check-levels');
