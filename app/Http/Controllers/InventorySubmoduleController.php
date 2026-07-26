@@ -11,7 +11,14 @@ use Illuminate\Support\Facades\Artisan;
 
 class InventorySubmoduleController extends Controller
 {
-    private const ACTING_USER = 'Warehouse Manager';
+    /**
+     * The real logged-in user for this session, formatted as "Name(Role)",
+     * used to attribute log entries and requests.
+     */
+    private static function actingUser(): string
+    {
+        return \App\Support\Roles::currentNameWithRole();
+    }
 
     public function index()
     {
@@ -94,7 +101,7 @@ class InventorySubmoduleController extends Controller
         }
         $item->save();
 
-        SystemLog::create(['user' => self::ACTING_USER, 'action' => "Changed {$request->target} limit for {$item->name} ({$item->id}) from {$oldValue} to {$request->value}."]);
+        SystemLog::create(['user' => self::actingUser(), 'action' => "Changed {$request->target} limit for {$item->name} ({$item->id}) from {$oldValue} to {$request->value}."]);
 
         Artisan::call('stock:check-levels');
 
@@ -109,7 +116,7 @@ class InventorySubmoduleController extends Controller
         $item->auto_reorder = $request->boolean('enabled');
         $item->save();
 
-        SystemLog::create(['user' => self::ACTING_USER, 'action' => "Turned auto-reorder " . ($item->auto_reorder ? 'ON' : 'OFF') . " for {$item->name} ({$item->id})."]);
+        SystemLog::create(['user' => self::actingUser(), 'action' => "Turned auto-reorder " . ($item->auto_reorder ? 'ON' : 'OFF') . " for {$item->name} ({$item->id})."]);
 
         Artisan::call('stock:check-levels');
 
@@ -125,9 +132,27 @@ class InventorySubmoduleController extends Controller
             'itemsArray' => 'required|array',
         ]);
 
+        // Block ordering any item that is currently overstocked (qty already
+        // above its max limit) — matches the UI, which disables the
+        // "Create PO" button for these items, but this re-checks server-side
+        // in case the request bypasses the UI entirely.
+        foreach ($request->itemsArray as $row) {
+            if (!isset($row['id'])) continue;
+
+            $item = Item::find($row['id']);
+            if (!$item) continue;
+
+            if ($item->maxLimit > 0 && $item->qty > $item->maxLimit) {
+                return response()->json([
+                    'success' => false,
+                    'message' => "Cannot create a purchase order for \"{$item->name}\" — it is currently overstocked (qty {$item->qty} exceeds max limit {$item->maxLimit}).",
+                ], 400);
+            }
+        }
+
         $newRequest = ApprovalRequest::create([
             'timestamp' => now()->format('Y-m-d H:i'),
-            'requester' => self::ACTING_USER,
+            'requester' => self::actingUser(),
             'details' => $request->details,
             'supplier' => $request->supplier,
             'warehouse' => $request->warehouse,
@@ -143,7 +168,7 @@ class InventorySubmoduleController extends Controller
             ]);
         }
 
-        SystemLog::create(['user' => self::ACTING_USER, 'action' => "Submitted a new purchase order #{$newRequest->reqId} — {$request->details}."]);
+        SystemLog::create(['user' => self::actingUser(), 'action' => "Submitted a new purchase order #{$newRequest->reqId} — {$request->details}."]);
 
         // ADD THIS LINE HERE
         Artisan::call('stock:check-levels');
@@ -161,7 +186,7 @@ class InventorySubmoduleController extends Controller
         $pipeline->status = 'Pending';
         $pipeline->save();
 
-        SystemLog::create(['user' => self::ACTING_USER, 'action' => "Reviewed and submitted auto-generated draft PO #{$pipeline->reqId} into the approval pipeline."]);
+        SystemLog::create(['user' => self::actingUser(), 'action' => "Reviewed and submitted auto-generated draft PO #{$pipeline->reqId} into the approval pipeline."]);
 
         // ADD THIS LINE HERE
         Artisan::call('stock:check-levels');
@@ -179,7 +204,7 @@ class InventorySubmoduleController extends Controller
         $pipeline->status = 'Voided';
         $pipeline->save();
 
-        SystemLog::create(['user' => self::ACTING_USER, 'action' => "Discarded auto-generated draft PO #{$pipeline->reqId}."]);
+        SystemLog::create(['user' => self::actingUser(), 'action' => "Discarded auto-generated draft PO #{$pipeline->reqId}."]);
 
         $autoReorderTurnedOff = false;
         if ($pipeline->source === 'auto') {
@@ -191,7 +216,7 @@ class InventorySubmoduleController extends Controller
                     $item->save();
                     $autoReorderTurnedOff = true;
 
-                    SystemLog::create(['user' => self::ACTING_USER, 'action' => "Turned auto-reorder OFF for {$item->name} ({$item->id}) — its auto-generated draft PO #{$pipeline->reqId} was discarded."]);
+                    SystemLog::create(['user' => self::actingUser(), 'action' => "Turned auto-reorder OFF for {$item->name} ({$item->id}) — its auto-generated draft PO #{$pipeline->reqId} was discarded."]);
                 }
             }
         }
@@ -217,13 +242,13 @@ class InventorySubmoduleController extends Controller
         if ($request->status === 'Voided') {
             $pipeline->status = 'Voided';
             $pipeline->save();
-            SystemLog::create(['user' => self::ACTING_USER, 'action' => "Voided purchase order #{$pipeline->reqId}."]);
+            SystemLog::create(['user' => self::actingUser(), 'action' => "Voided purchase order #{$pipeline->reqId}."]);
             return response()->json($this->getAppData());
         }
 
         $pipeline->status = 'Ordered';
         $pipeline->save();
-        SystemLog::create(['user' => self::ACTING_USER, 'action' => "Approved purchase order #{$pipeline->reqId} — order placed with {$pipeline->supplier}. Awaiting delivery."]);
+        SystemLog::create(['user' => self::actingUser(), 'action' => "Approved purchase order #{$pipeline->reqId} — order placed with {$pipeline->supplier}. Awaiting delivery."]);
 
         // ADD THIS LINE HERE
         Artisan::call('stock:check-levels');
@@ -246,7 +271,7 @@ class InventorySubmoduleController extends Controller
                 'qty' => $lineItem->qty,
                 'source_type' => 'purchase_order',
                 'source_id' => $pipeline->reqId,
-                'created_by' => self::ACTING_USER,
+                'created_by' => self::actingUser(),
             ]);
 
             // 2. Actually add the quantity to the master inventory
@@ -263,7 +288,7 @@ class InventorySubmoduleController extends Controller
         // 3. Recalculate alerts now that the stock has actually increased
         Artisan::call('stock:check-levels');
 
-        SystemLog::create(['user' => self::ACTING_USER, 'action' => "Marked purchase order #{$pipeline->reqId} as Received — stock updated and recorded in Shipment Handoffs."]);
+        SystemLog::create(['user' => self::actingUser(), 'action' => "Marked purchase order #{$pipeline->reqId} as Received — stock updated and recorded in Shipment Handoffs."]);
 
         return response()->json($this->getAppData());
     }
@@ -273,7 +298,7 @@ class InventorySubmoduleController extends Controller
         $part = Item::findOrFail($request->itemId);
         QcInspection::create([
             'id' => 'REQ-I-' . rand(1000, 9999),
-            'op' => $request->op,
+            'op' => self::actingUser(),
             'itemId' => $part->id,
             'product' => $part->name,
             'source' => $request->source,
@@ -287,7 +312,7 @@ class InventorySubmoduleController extends Controller
         $part = Item::findOrFail($request->itemId);
         RmaRequest::create([
             'id' => 'REQ-R-' . rand(1000, 9999),
-            'op' => $request->op,
+            'op' => self::actingUser(),
             'itemId' => $part->id,
             'product' => $part->name,
             'vendor' => $request->vendor,
@@ -341,7 +366,7 @@ class InventorySubmoduleController extends Controller
             'op' => $req->op, 'stream' => $type, 'info' => $infoStr, 'outcome' => $outcome, 'statusType' => $statusType
         ]);
         
-        SystemLog::create(['user' => $req->op, 'action' => "Resolved QC {$type}: {$outcome} for {$req->product}"]);
+        SystemLog::create(['user' => self::actingUser(), 'action' => "Resolved QC {$type}: {$outcome} for {$req->product}"]);
 
         return response()->json($this->getAppData());
     }
@@ -350,7 +375,7 @@ class InventorySubmoduleController extends Controller
     {
         BundleRequest::create([
             'id' => 'REQ-B-' . rand(1000, 9999),
-            'requester' => $request->requester,
+            'requester' => self::actingUser(),
             'type' => $request->type,
             'details' => $request->details,
             'recipe' => $request->recipe
@@ -362,7 +387,7 @@ class InventorySubmoduleController extends Controller
     {
         $req = BundleRequest::findOrFail($request->id);
         $decision = $request->decision;
-        $approver = $request->approver;
+        $approver = self::actingUser();
 
         if ($decision === 'Approved') {
             $shortages = [];

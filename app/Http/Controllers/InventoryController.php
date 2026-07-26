@@ -7,6 +7,7 @@ use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Artisan;
 use App\Models\Item;
 use App\Models\InventoryRequest;
+use App\Models\SystemLog;
 
 class InventoryController extends Controller
 {
@@ -25,14 +26,13 @@ class InventoryController extends Controller
     {
         $validated = $request->validate([
             'type' => 'required|in:ADD,EDIT,DELETE',
-            'requestor' => 'required|string',
             'target_item_id' => 'nullable|string', // <-- ALLOWS STRING IDs
             'proposed_data' => 'required|array'
         ]);
 
         $newRequest = InventoryRequest::create([
             'type' => $validated['type'],
-            'requestor' => $validated['requestor'],
+            'requestor' => \App\Support\Roles::currentNameWithRole(),
             'target_item_id' => $validated['target_item_id'] ?? null,
             'proposed_data' => $validated['proposed_data'],
             'outcome' => 'PENDING'
@@ -46,8 +46,8 @@ class InventoryController extends Controller
     {
         $validated = $request->validate([
             'decision' => 'required|in:approve,void',
-            'reviewer' => 'required|string'
         ]);
+        $reviewer = \App\Support\Roles::currentNameWithRole();
 
         $invRequest = InventoryRequest::findOrFail($id);
         
@@ -60,7 +60,7 @@ class InventoryController extends Controller
             $data = is_string($invRequest->proposed_data) ? json_decode($invRequest->proposed_data, true) : $invRequest->proposed_data;
 
             if ($invRequest->type === 'ADD') {
-                Item::create([
+                $newItem = Item::create([
                     'id' => 'PRD-' . strtoupper(\Illuminate\Support\Str::random(8)),
                     'name' => $data['name'],
                     'category' => $data['category'],
@@ -70,6 +70,11 @@ class InventoryController extends Controller
                     'zone' => $data['location'] ?? null, // Correctly mapped to the 'zone' column
                     'status' => $data['status'],
                     'desc' => $data['desc'] ?? null
+                ]);
+
+                SystemLog::create([
+                    'user' => $reviewer,
+                    'action' => "Added new item {$newItem->name} ({$newItem->id}) — qty {$newItem->qty}.",
                 ]);
             } elseif ($invRequest->type === 'EDIT') {
                 $item = Item::findOrFail($invRequest->target_item_id);
@@ -83,9 +88,21 @@ class InventoryController extends Controller
                     'status' => $data['status'],
                     'desc' => $data['desc'] ?? null
                 ]);
+
+                SystemLog::create([
+                    'user' => $reviewer,
+                    'action' => "Edited item {$item->name} ({$item->id}).",
+                ]);
             } elseif ($invRequest->type === 'DELETE') {
                 $item = Item::findOrFail($invRequest->target_item_id);
+                $itemName = $item->name;
+                $itemId = $item->id;
                 $item->delete();
+
+                SystemLog::create([
+                    'user' => $reviewer,
+                    'action' => "Deleted item {$itemName} ({$itemId}).",
+                ]);
             }
 
             $invRequest->outcome = 'APPROVED';
@@ -97,9 +114,14 @@ class InventoryController extends Controller
             Artisan::call('stock:check-levels');
         } else {
             $invRequest->outcome = 'VOIDED';
+
+            SystemLog::create([
+                'user' => $reviewer,
+                'action' => "Voided a {$invRequest->type} item request (#{$invRequest->id}).",
+            ]);
         }
 
-        $invRequest->reviewer = $validated['reviewer'];
+        $invRequest->reviewer = $reviewer;
         $invRequest->save();
 
         return response()->json(['success' => true]);

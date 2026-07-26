@@ -39,7 +39,6 @@
             @endphp
 
             <nav class="p-4 flex flex-col gap-1.5 overflow-y-auto flex-1">
-                
                 <!-- Dashboard -->
                 <a href="{{ route('inventory.dashboard', ['tab' => 'dashboard']) }}" 
                 onclick="if(typeof handleJsNav === 'function') handleJsNav(event, 'dashboard')" id="nav-dashboard" 
@@ -88,12 +87,7 @@
                 
             </nav>
         </div>
-        <div class="p-4 border-t border-white/10 bg-black/10 flex items-center justify-between text-sm font-semibold">
-            <a href="#" class="hover:text-blue-200 transition-colors flex items-center gap-2 py-1 px-2 rounded hover:bg-white/5 text-xs">
-                <span class="w-2 h-2 rounded-full bg-emeraldAccent"></span>Admin Panel
-            </a>
-            <button onclick="alert('Logging out...')" class="hover:text-red-300 text-white/80 transition-colors flex items-center gap-1 py-1 px-2 rounded hover:bg-white/5 text-xs">Logout</button>
-        </div>
+        @include('partials.role-bar')
     </aside>
 
     <!-- Content injected here -->

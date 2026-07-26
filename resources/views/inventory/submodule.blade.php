@@ -62,7 +62,6 @@
             @endphp
 
             <nav class="p-4 flex flex-col gap-1.5 overflow-y-auto flex-1">
-                
                 <!-- Dashboard -->
                 <a href="{{ route('inventory.dashboard', ['tab' => 'dashboard']) }}" 
                 onclick="if(typeof handleJsNav === 'function') handleJsNav(event, 'dashboard')" id="nav-dashboard" 
@@ -113,15 +112,7 @@
         </div>
 
         <!-- User Profile Actions -->
-        <div class="p-4 border-t border-white/10 bg-black/10 flex items-center justify-between text-sm font-semibold shrink-0">
-            <a href="#" class="hover:text-blue-200 transition-colors flex items-center gap-2 py-1 px-2 rounded hover:bg-white/5 text-xs">
-                <span class="w-2 h-2 rounded-full bg-emeraldGreen"></span>
-                Admin Panel
-            </a>
-            <button onclick="alert('Logging out...')" class="hover:text-red-300 text-white/80 transition-colors flex items-center gap-1 py-1 px-2 rounded hover:bg-white/5 text-xs">
-                Logout
-            </button>
-        </div>
+        @include('partials.role-bar')
     </aside>
 
     <!-- Main Content Container -->
@@ -140,12 +131,12 @@
 
             <!-- Dashboard ROW 1: Inventory Flow Line Graph -->
             <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col justify-between">
-                <div class="flex items-center justify-between border-b border-gray-100 pb-3 mb-4">
+                <div class="flex items-center justify-between border-b border-gray-100 pb-3 mb-4 flex-wrap gap-3">
                     <div>
                         <h3 class="text-sm font-bold text-gray-700 uppercase tracking-wider flex items-center gap-2">
                             <span>📦 Inventory Flow Trends</span>
                         </h3>
-                        <p class="text-xs text-gray-400">Comparing inbound deliveries vs outbound shipments over the last 6 weeks</p>
+                        <p class="text-xs text-gray-400" id="dashFlowSubtitle">Comparing inbound deliveries vs outbound shipments over the last 7 days</p>
                     </div>
                     <div class="flex items-center gap-4">
                         <div class="flex items-center gap-3 text-xs font-medium">
@@ -156,6 +147,11 @@
                             Expand Chart
                         </button>
                     </div>
+                </div>
+
+                <!-- Range Selector Toolbar -->
+                <div class="flex items-center mb-3">
+                    <div class="flex items-center gap-1 bg-gray-100 rounded-lg p-1 w-fit" id="dashFlowRangeTabs"></div>
                 </div>
 
                 <div class="w-full relative min-h-[220px] bg-gray-50/50 rounded-lg p-2 border border-gray-100">
@@ -173,7 +169,6 @@
                             <p class="text-xs text-gray-400">Inventory split by component type</p>
                         </div>
                         <div class="flex gap-2">
-                            <button onclick="alert('Module in development')" class="text-[11px] font-semibold text-gray-600 hover:text-navyBlue bg-gray-100 px-2 py-1 rounded transition-colors">View Items</button>
                             <button onclick="expandDashboardPanel('categories')" class="text-[11px] font-bold text-white bg-navyBlue hover:bg-blue-800 px-2.5 py-1 rounded transition-colors">Expand</button>
                         </div>
                     </div>
@@ -191,7 +186,6 @@
                             <p class="text-xs text-gray-400">Inventory split by storage site</p>
                         </div>
                         <div class="flex gap-2">
-                            <button onclick="alert('Module in development')" class="text-[11px] font-semibold text-gray-600 hover:text-navyBlue bg-gray-100 px-2 py-1 rounded transition-colors">View Maps</button>
                             <button onclick="expandDashboardPanel('warehouses')" class="text-[11px] font-bold text-white bg-navyBlue hover:bg-blue-800 px-2.5 py-1 rounded transition-colors">Expand</button>
                         </div>
                     </div>
@@ -428,22 +422,12 @@
                                 <!-- Populated dynamically -->
                             </select>
                         </div>
-                        <div class="grid grid-cols-2 gap-4">
-                            <div>
-                                <label class="block text-xs font-semibold text-gray-700 mb-1">Source / Origin</label>
-                                <select id="insSource" required class="w-full border border-gray-300 rounded-md p-2 text-sm focus:border-navyBlue outline-none bg-white">
-                                    <option value="Customer Aftersales">Customer Aftersales Return</option>
-                                    <option value="Warehouse Transfer">Warehouse Transfer</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label class="block text-xs font-semibold text-gray-700 mb-1">Operator</label>
-                                <select id="insOp" required class="w-full border border-gray-300 rounded-md p-2 text-sm focus:border-navyBlue outline-none bg-white">
-                                    <option value="admin1">admin1</option>
-                                    <option value="admin2">admin2</option>
-                                    <option value="admin3">admin3</option>
-                                </select>
-                            </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700 mb-1">Source / Origin</label>
+                            <select id="insSource" required class="w-full border border-gray-300 rounded-md p-2 text-sm focus:border-navyBlue outline-none bg-white">
+                                <option value="Customer Aftersales">Customer Aftersales Return</option>
+                                <option value="Warehouse Transfer">Warehouse Transfer</option>
+                            </select>
                         </div>
                         <div>
                             <label class="block text-xs font-semibold text-gray-700 mb-1">Validation Outcome</label>
@@ -489,19 +473,9 @@
                                 </label>
                             </div>
                         </div>
-                        <div class="grid grid-cols-2 gap-4">
-                            <div>
-                                <label class="block text-xs font-semibold text-gray-700 mb-1">Target Manufacturer</label>
-                                <input type="text" id="rmaVendor" required placeholder="e.g. ASUS, Corsair" class="w-full border border-gray-300 rounded-md p-2 text-sm focus:border-navyBlue outline-none">
-                            </div>
-                            <div>
-                                <label class="block text-xs font-semibold text-gray-700 mb-1">Operator</label>
-                                <select id="rmaOp" required class="w-full border border-gray-300 rounded-md p-2 text-sm focus:border-navyBlue outline-none bg-white">
-                                    <option value="admin1">admin1</option>
-                                    <option value="admin2">admin2</option>
-                                    <option value="admin3">admin3</option>
-                                </select>
-                            </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-700 mb-1">Target Manufacturer</label>
+                            <input type="text" id="rmaVendor" required placeholder="e.g. ASUS, Corsair" class="w-full border border-gray-300 rounded-md p-2 text-sm focus:border-navyBlue outline-none">
                         </div>
                         <button type="submit" class="w-full bg-navyBlue text-white font-bold py-2.5 rounded-md hover:bg-blue-900 transition-colors mt-2 text-sm">
                             Submit to RMA Approvals
@@ -907,6 +881,240 @@
     let dashCatChart = null;
     let dashWhChart = null;
     let dashFlowChart = null;
+    let dashFlowRange = '7D';
+    let dashModalFlowChart = null;
+    let dashModalFlowRange = '7D';
+    const DASH_FLOW_RANGE_OPTIONS = ['7D', '1M', '3M', 'YTD', '1Y', 'Max'];
+
+    function dashFlowRangeLabel(range) {
+        const labels = {
+            '7D': 'the last 7 days', '1M': 'the last month',
+            '3M': 'the last 3 months', 'YTD': 'year to date', '1Y': 'the last year', 'Max': 'all available history'
+        };
+        return labels[range] || 'the selected period';
+    }
+
+    function dashFlowRangeTabsHtml(activeRange, handlerName) {
+        return DASH_FLOW_RANGE_OPTIONS.map(r => `
+            <button type="button" onclick="${handlerName}('${r}')" class="px-3 py-1 text-xs font-semibold rounded-md transition-colors ${r === activeRange ? 'bg-white text-navyBlue shadow-sm' : 'text-gray-500 hover:text-gray-700'}">${r}</button>
+        `).join('');
+    }
+
+    // Maps a range key to a bucket unit (day/week/month) + how many buckets to show,
+    // so short ranges stay at daily granularity and long ranges roll up into readable chunks.
+    function dashFlowBucketConfig(range) {
+        const today = new Date(); today.setHours(0, 0, 0, 0);
+        switch (range) {
+            case '7D': return { unit: 'day', count: 7, end: today };
+            case '1M': return { unit: 'day', count: 30, end: today };
+            case '3M': return { unit: 'week', count: 13, end: today };
+            case 'YTD': return { unit: 'month', count: today.getMonth() + 1, end: today };
+            case '1Y': return { unit: 'month', count: 12, end: today };
+            case 'Max': return { unit: 'month', count: 24, end: today };
+            default: return { unit: 'day', count: 7, end: today };
+        }
+    }
+
+    function dashFlowBuildBuckets(config) {
+        const buckets = [];
+        const end = new Date(config.end);
+        if (config.unit === 'day') {
+            for (let i = config.count - 1; i >= 0; i--) {
+                const start = new Date(end); start.setDate(start.getDate() - i);
+                const bucketEnd = new Date(start); bucketEnd.setDate(bucketEnd.getDate() + 1);
+                buckets.push({ label: start.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }), start, end: bucketEnd });
+            }
+        } else if (config.unit === 'week') {
+            for (let i = config.count - 1; i >= 0; i--) {
+                const start = new Date(end); start.setDate(start.getDate() - (i * 7) - 6);
+                const bucketEnd = new Date(start); bucketEnd.setDate(bucketEnd.getDate() + 7);
+                buckets.push({ label: start.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }), start, end: bucketEnd });
+            }
+        } else if (config.unit === 'month') {
+            for (let i = config.count - 1; i >= 0; i--) {
+                const start = new Date(end.getFullYear(), end.getMonth() - i, 1);
+                const bucketEnd = new Date(end.getFullYear(), end.getMonth() - i + 1, 1);
+                buckets.push({ label: start.toLocaleDateString('en-US', { month: 'short', year: '2-digit' }), start, end: bucketEnd });
+            }
+        }
+        return buckets;
+    }
+
+    function dashFlowBucketIndex(buckets, date) {
+        for (let i = 0; i < buckets.length; i++) {
+            if (date >= buckets[i].start && date < buckets[i].end) return i;
+        }
+        return -1;
+    }
+
+    // Shared fetch + Chart.js builder used by both the dashboard card chart and the expanded modal chart.
+    // onPointClick (optional) receives (bucket, movementsInBucket) when a chart point is clicked —
+    // used by the expanded modal to show the stock-movement details behind that point.
+    function dashFlowLoadAndRender({ canvasId, range, getChartRef, setChartRef, showLegend, onPointClick }) {
+        const config = dashFlowBucketConfig(range);
+        const buckets = dashFlowBuildBuckets(config);
+        const labels = buckets.map(b => b.label);
+        const inboundCounts = new Array(buckets.length).fill(0);
+        const outboundCounts = new Array(buckets.length).fill(0);
+
+        return fetch("{{ route('stock-movements.data') }}")
+            .then(res => res.json())
+            .then(data => {
+                const movements = data.movements || [];
+                const approvedMovements = [];
+                movements.forEach(movement => {
+                    if (movement.status !== 'Approved') return;
+                    const rawDate = movement.date || movement.created_at;
+                    if (!rawDate) return;
+                    const idx = dashFlowBucketIndex(buckets, new Date(rawDate));
+                    if (idx === -1) return;
+                    const type = (movement.type || '').toLowerCase();
+                    const qty = parseInt(movement.qty) || 0;
+                    if (type === 'stock-in' || type === 'product return') {
+                        inboundCounts[idx] += qty;
+                    } else if (type === 'stock-out' || type === 'warehouse transfer') {
+                        outboundCounts[idx] += qty;
+                    }
+                    approvedMovements.push({ ...movement, _bucketIndex: idx });
+                });
+
+                const canvas = document.getElementById(canvasId);
+                if (!canvas) return;
+                const existing = getChartRef();
+                if (existing) existing.destroy();
+
+                const maxVal = Math.max(10, ...inboundCounts, ...outboundCounts);
+                const sparse = buckets.length > 40;
+                const newChart = new Chart(canvas.getContext('2d'), {
+                    type: 'line',
+                    data: {
+                        labels,
+                        datasets: [
+                            { label: 'Inbound', data: inboundCounts, borderColor: '#1E3A8A', tension: 0.3, borderWidth: 3, pointRadius: sparse ? 0 : 3 },
+                            { label: 'Outbound', data: outboundCounts, borderColor: '#10B981', tension: 0.3, borderWidth: 3, pointRadius: sparse ? 0 : 3 }
+                        ]
+                    },
+                    options: {
+                        responsive: true, maintainAspectRatio: false,
+                        plugins: { legend: { display: !!showLegend, position: 'bottom' } },
+                        scales: {
+                            y: { display: true, beginAtZero: true, suggestedMax: maxVal, ticks: { stepSize: Math.max(2, Math.ceil(maxVal / 5)) } },
+                            x: { grid: { display: false }, ticks: { maxRotation: 0, autoSkip: true, maxTicksLimit: 8 } }
+                        },
+                        onClick: (evt, elements, chartInstance) => {
+                            if (!onPointClick) return;
+                            const points = chartInstance.getElementsAtEventForMode(evt, 'index', { intersect: false }, true);
+                            if (!points.length) return;
+                            const idx = points[0].index;
+                            onPointClick(buckets[idx], approvedMovements.filter(m => m._bucketIndex === idx));
+                        },
+                        onHover: (evt, elements) => {
+                            if (onPointClick && evt.native) evt.native.target.style.cursor = elements.length ? 'pointer' : 'default';
+                        }
+                    }
+                });
+                setChartRef(newChart);
+            })
+            .catch(err => console.error("Chart Fetch Error:", err));
+    }
+
+    function renderDashFlowChart(range) {
+        dashFlowRange = range;
+        const tabs = document.getElementById('dashFlowRangeTabs');
+        if (tabs) tabs.innerHTML = dashFlowRangeTabsHtml(range, 'setDashFlowRange');
+        const subtitle = document.getElementById('dashFlowSubtitle');
+        if (subtitle) subtitle.innerText = `Comparing inbound deliveries vs outbound shipments over ${dashFlowRangeLabel(range)}`;
+        dashFlowLoadAndRender({
+            canvasId: 'dashFlowChart',
+            range,
+            getChartRef: () => dashFlowChart,
+            setChartRef: (c) => { dashFlowChart = c; },
+            showLegend: false
+        });
+    }
+
+    window.setDashFlowRange = function(range) {
+        renderDashFlowChart(range);
+    }
+
+    function renderDashModalFlowChart(range) {
+        dashModalFlowRange = range;
+        const tabs = document.getElementById('dashModalFlowRangeTabs');
+        if (tabs) tabs.innerHTML = dashFlowRangeTabsHtml(range, 'setDashModalFlowRange');
+        const subtitle = document.getElementById('dashModalFlowSubtitle');
+        if (subtitle) subtitle.innerText = `Inbound deliveries vs outbound shipments over ${dashFlowRangeLabel(range)}.`;
+
+        // Reset the detail panel until the person clicks a point on the (new) chart.
+        const detailTitle = document.getElementById('dashModalFlowDetailTitle');
+        const detail = document.getElementById('dashModalFlowDetail');
+        if (detailTitle) detailTitle.innerText = 'Stock Movement Details';
+        if (detail) detail.innerHTML = `<div class="text-gray-400 italic">Click a point on the chart to see stock movements for that period.</div>`;
+
+        dashFlowLoadAndRender({
+            canvasId: 'dashModalFlowChart',
+            range,
+            getChartRef: () => dashModalFlowChart,
+            setChartRef: (c) => { dashModalFlowChart = c; },
+            showLegend: true,
+            onPointClick: (bucket, movementsInBucket) => renderDashModalFlowDetail(bucket, movementsInBucket)
+        });
+    }
+
+    function renderDashModalFlowDetail(bucket, movementsInBucket) {
+        const titleEl = document.getElementById('dashModalFlowDetailTitle');
+        const body = document.getElementById('dashModalFlowDetail');
+        if (!body) return;
+
+        if (titleEl) titleEl.innerText = `Stock Movements — ${bucket.label}`;
+
+        if (!movementsInBucket.length) {
+            body.innerHTML = `<div class="text-gray-400 italic">No approved stock movements in this period.</div>`;
+            return;
+        }
+
+        const inventory = appState.inventory || [];
+        const rows = movementsInBucket
+            .slice()
+            .sort((a, b) => new Date(a.date || a.created_at) - new Date(b.date || b.created_at))
+            .map(m => {
+                const item = inventory.find(i => String(i.id) === String(m.part_id));
+                const typeLower = (m.type || '').toLowerCase();
+                const isInbound = typeLower === 'stock-in' || typeLower === 'product return';
+                const qtyClass = isInbound ? 'text-navyBlue' : 'text-emeraldGreen';
+                const qtySign = isInbound ? '+' : '-';
+                const movedOn = new Date(m.date || m.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                return `
+                    <tr class="border-b border-gray-100 last:border-0">
+                        <td class="py-2 pr-3 font-mono text-gray-400">#${m.tx_id}</td>
+                        <td class="py-2 pr-3 font-semibold text-gray-800">${item ? item.name : (m.part_id || 'Unknown Item')}</td>
+                        <td class="py-2 pr-3 text-gray-600">${m.type}</td>
+                        <td class="py-2 pr-3 text-right font-bold ${qtyClass}">${qtySign}${m.qty}</td>
+                        <td class="py-2 pr-3 text-gray-500">${m.user || '—'}</td>
+                        <td class="py-2 text-gray-400">${movedOn}</td>
+                    </tr>`;
+            }).join('');
+
+        body.innerHTML = `
+            <div class="overflow-x-auto bg-white border rounded-lg">
+                <table class="w-full text-left text-xs">
+                    <thead>
+                        <tr class="text-gray-400 uppercase text-[10px] border-b border-gray-200 bg-gray-50">
+                            <th class="py-2 px-3">Tx ID</th>
+                            <th class="py-2 px-3">Item</th>
+                            <th class="py-2 px-3">Type</th>
+                            <th class="py-2 px-3 text-right">Qty</th>
+                            <th class="py-2 px-3">Requested By</th>
+                            <th class="py-2 px-3">Date</th>
+                        </tr>
+                    </thead>
+                    <tbody class="px-3">${rows}</tbody>
+                </table>
+            </div>`;
+    }
+
+    window.setDashModalFlowRange = function(range) {
+        renderDashModalFlowChart(range);
+    }
 
     function renderDashboardCharts() {
         const inventory = appState.inventory || [];
@@ -966,67 +1174,7 @@
         });
 
         // --- Inventory Flow Chart (Live Data Integration) ---
-        if (dashFlowChart) dashFlowChart.destroy();
-        
-        const dynamicDates = [];
-        const inboundCounts = [0, 0, 0, 0, 0, 0];
-        const outboundCounts = [0, 0, 0, 0, 0, 0];
-        
-        // 1. Generate dates starting from TODAY going forward 5 days (6 days total)
-        for (let i = 0; i <= 5; i++) {
-            const d = new Date();
-            d.setDate(d.getDate() + i);
-            dynamicDates.push(d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
-        }
-
-        // 2. FETCH THE LIVE DATA DIRECTLY FROM THE ENDPOINT
-        fetch("{{ route('stock-movements.data') }}")
-            .then(res => res.json())
-            .then(data => {
-                const movements = data.movements || [];
-                
-                movements.forEach(movement => {
-                    // Only count 'Approved' transactions on the dashboard chart
-                    if (movement.status !== 'Approved') return;
-
-                    const rawDate = movement.date || movement.created_at;
-                    const movementDateStr = new Date(rawDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-                    
-                    const dateIndex = dynamicDates.indexOf(movementDateStr);
-                    
-                    if (dateIndex !== -1) {
-                        const type = (movement.type || '').toLowerCase();
-                        const qty = parseInt(movement.qty) || 0;
-
-                        if (type === 'stock-in' || type === 'product return') {
-                            inboundCounts[dateIndex] += qty;
-                        } else if (type === 'stock-out' || type === 'warehouse transfer') {
-                            outboundCounts[dateIndex] += qty;
-                        }
-                    }
-                });
-
-                // 3. Render the chart INSIDE the fetch block so it waits for the data
-                dashFlowChart = new Chart(document.getElementById('dashFlowChart').getContext('2d'), {
-                    type: 'line',
-                    data: {
-                        labels: dynamicDates,
-                        datasets: [
-                            { label: 'Inbound', data: inboundCounts, borderColor: '#1E3A8A', tension: 0.3, borderWidth: 3 },
-                            { label: 'Outbound', data: outboundCounts, borderColor: '#10B981', tension: 0.3, borderWidth: 3 }
-                        ]
-                    },
-                    options: {
-                        responsive: true, maintainAspectRatio: false,
-                        plugins: { legend: { display: false } },
-                        scales: { 
-                            y: { display: true, beginAtZero: true, suggestedMax: 10, ticks: { stepSize: 2 } }, 
-                            x: { grid: { display: false } } 
-                        }
-                    }
-                });
-            })
-            .catch(err => console.error("Chart Fetch Error:", err));
+        renderDashFlowChart(dashFlowRange);
     }
 
     function runDashDirectoryFiltering() {
@@ -1114,71 +1262,24 @@
         
         if(panelType === 'flowGraph') {
             title.innerText = "Inventory Flow Analysis";
-            
-            // Generate the exact same forward-facing dates as the line chart
-            const dynamicDates = [];
-            const inboundCounts = [0, 0, 0, 0, 0, 0];
-            const outboundCounts = [0, 0, 0, 0, 0, 0];
-            
-            for (let i = 0; i <= 5; i++) {
-                const d = new Date();
-                d.setDate(d.getDate() + i);
-                dynamicDates.push(d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
-            }
+            content.innerHTML = `
+                <div class="space-y-4">
+                    <div class="flex items-center justify-between flex-wrap gap-2">
+                        <p class="text-gray-500 leading-relaxed text-xs" id="dashModalFlowSubtitle"></p>
+                        <div class="flex items-center gap-1 bg-gray-100 rounded-lg p-1 w-fit" id="dashModalFlowRangeTabs"></div>
+                    </div>
+                    <div class="w-full relative min-h-[280px] bg-gray-50/50 rounded-lg p-2 border border-gray-100">
+                        <canvas id="dashModalFlowChart"></canvas>
+                    </div>
+                    <p class="text-[11px] text-gray-400 italic">Click a point on the chart to see the individual stock movements behind it.</p>
+                    <div class="border-t border-gray-100 pt-3">
+                        <h4 class="font-bold text-gray-800 mb-2 uppercase text-[10px] tracking-wide" id="dashModalFlowDetailTitle">Stock Movement Details</h4>
+                        <div id="dashModalFlowDetail" class="text-xs text-gray-400 italic">Click a point on the chart to see stock movements for that period.</div>
+                    </div>
+                </div>`;
+            renderDashModalFlowChart(dashFlowRange);
 
-            // Set a temporary loading state while we fetch the live data
-            content.innerHTML = `<div class="p-4 text-center text-gray-500 font-medium">Loading ledger data...</div>`;
-
-            fetch("{{ route('stock-movements.data') }}")
-                .then(res => res.json())
-                .then(data => {
-                    const movements = data.movements || [];
-                    
-                    movements.forEach(movement => {
-                        if (movement.status !== 'Approved') return;
-
-                        const rawDate = movement.date || movement.created_at;
-                        const movementDateStr = new Date(rawDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-                        const dateIndex = dynamicDates.indexOf(movementDateStr);
-                        
-                        if (dateIndex !== -1) {
-                            const type = (movement.type || '').toLowerCase();
-                            const qty = parseInt(movement.qty) || 0;
-
-                            if (type === 'stock-in' || type === 'product return') {
-                                inboundCounts[dateIndex] += qty;
-                            } else if (type === 'stock-out' || type === 'warehouse transfer') {
-                                outboundCounts[dateIndex] += qty;
-                            }
-                        }
-                    });
-
-                    // Build the HTML rows using the live arrays we just populated
-                    let rowsHtml = '';
-                    dynamicDates.forEach((dateStr, index) => {
-                        rowsHtml += `<div class="flex justify-between border-b border-gray-100 pb-1.5 pt-1.5 last:border-0 last:pb-0">
-                            <span>${dateStr}</span> 
-                            <span class="text-navyBlue font-bold">${inboundCounts[index]} Units</span> 
-                            <span class="text-emeraldGreen font-bold">${outboundCounts[index]} Units</span>
-                        </div>`;
-                    });
-
-                    // Inject the final HTML into the modal
-                    content.innerHTML = `
-                        <div class="space-y-4">
-                            <p class="text-gray-500 leading-relaxed">The warehouse asset efficiency calculations show inbound deliveries and outbound fulfillment over the next 6 days:</p>
-                            <div class="bg-white border rounded-lg p-4">
-                                <h4 class="font-bold text-gray-800 mb-2 uppercase text-[10px] tracking-wide">Daily Ledger Details</h4>
-                                <div class="space-y-2 text-gray-600 font-medium">
-                                    <div class="flex justify-between border-b pb-2 text-gray-400 text-[10px] uppercase"><span>Date</span> <span>Units Inbound</span> <span>Units Outbound</span></div>
-                                    ${rowsHtml}
-                                </div>
-                            </div>
-                        </div>`;
-                })
-                .catch(err => console.error("Modal Fetch Error:", err));
-
-        } else if(panelType === 'warehouses') {
+        } else if(panelType === 'categories') {
             title.innerText = "Category Distribution Analysis";
             
             // Calculate live category stats based on qty
@@ -1211,7 +1312,7 @@
                     </div>
                 </div>`;
 
-        } else if(panelType === 'categories') {
+        } else if(panelType === 'warehouses') {
             title.innerText = "Storage Placement Overview";
             
             // Calculate live warehouse stats based on qty
@@ -1273,6 +1374,7 @@
     window.closeDashModalWindow = function() {
         document.getElementById('dashExpansionModal').classList.add('hidden');
         document.getElementById('dashExpansionModal').classList.remove('flex');
+        if (dashModalFlowChart) { dashModalFlowChart.destroy(); dashModalFlowChart = null; }
     }
 
     // ==========================================
@@ -1359,7 +1461,7 @@
         const payload = { 
             itemId: document.getElementById('insItem').value, 
             source: document.getElementById('insSource').value, 
-            op: document.getElementById('insOp').value, 
+            op: window.APP_USER_NAME, 
             outcome: document.getElementById('insOutcome').value 
         };
         const res = await fetch('/inventory/api/inspection', { method: 'POST', headers, body: JSON.stringify(payload) });
@@ -1376,7 +1478,7 @@
         const payload = { 
             itemId: document.getElementById('rmaItem').value, 
             vendor: document.getElementById('rmaVendor').value, 
-            op: document.getElementById('rmaOp').value, 
+            op: window.APP_USER_NAME, 
             reasons: Array.from(checkboxes).map(cb => cb.value).join(', ') 
         };
         const res = await fetch('/inventory/api/rma', { method: 'POST', headers, body: JSON.stringify(payload) });
@@ -1641,7 +1743,7 @@
     document.getElementById('confirmPresetPurchaseBtn').addEventListener('click', async () => {
         const p = bundlingPresets.find(i => i.id === bundlingSelectedPresetId);
         const payload = { 
-            requester: document.getElementById('userSelector').value, 
+            requester: window.APP_USER_NAME, 
             type: 'Pre-built', 
             details: p.name, 
             recipe: p.recipe 
@@ -1701,7 +1803,7 @@
 
     document.getElementById('placeCustomOrderBtn').addEventListener('click', async () => {
         const payload = { 
-            requester: document.getElementById('userSelector').value, 
+            requester: window.APP_USER_NAME, 
             type: 'Custom Build', 
             details: `Assembly (${bundlingPendingCustomIds.length} parts)`, 
             recipe: bundlingPendingCustomIds 
@@ -1734,7 +1836,7 @@
 
             const approveBtn = blocked
                 ? `<button disabled title="Out of stock — cannot approve" class="text-xs bg-gray-300 text-gray-500 font-bold py-1 px-2 rounded cursor-not-allowed">Approve</button>`
-                : `<button onclick="resolveBundle('${req.id}', 'Approved')" class="text-xs bg-emeraldGreen hover:bg-green-600 text-white font-bold py-1 px-2 rounded transition-colors">Approve</button>`;
+                : gatedBtn(`<button onclick="resolveBundle('${req.id}', 'Approved')" class="text-xs bg-emeraldGreen hover:bg-green-600 text-white font-bold py-1 px-2 rounded transition-colors">Approve</button>`, 'approve_void_bundle');
 
             tbody.insertAdjacentHTML('beforeend', `
                 <tr class="border-b border-gray-100 hover:bg-gray-50 transition-colors">
@@ -1747,7 +1849,7 @@
                     <td class="py-2 px-3 text-center">
                         <div class="flex gap-2 justify-center">
                             ${approveBtn}
-                            <button onclick="resolveBundle('${req.id}', 'Voided')" class="text-xs bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-2 rounded transition-colors">Void</button>
+                            ${gatedBtn(`<button onclick="resolveBundle('${req.id}', 'Voided')" class="text-xs bg-red-500 hover:bg-red-600 text-white font-bold py-1 px-2 rounded transition-colors">Void</button>`, 'approve_void_bundle')}
                         </div>
                     </td>
                 </tr>`);
@@ -1779,8 +1881,8 @@
 
     // 1. Missing API caller to approve/void requests
     window.resolveBundle = async function(id, decision) {
-        // Grab the current acting user from the top right dropdown
-        const approver = document.getElementById('userSelector').value;
+        // The approver is always the real logged-in user (from the session), not client-editable
+        const approver = window.APP_USER_NAME;
         
         try {
             const res = await fetch('/inventory/api/resolve-bundle', { 

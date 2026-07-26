@@ -27,3 +27,14 @@ DB_PASSWORD=
   - Wait niyo. Then after niyan, eto - php artisan migrate:fresh --seed
  
   - Then open niyo sa laragon. Right click -> www tapos name ng folder project
+
+### Roles & Permissions
+
+What each role can't do:
+
+| Action | Staff | Manager | Admin |
+|---|---|---|---|
+| Approve/void PO, movement, layout transfer, bundle | ❌ | ✅ | ✅ |
+| Edit stock limits / auto-reorder | ❌ | ✅ | ✅ |
+| Configure bundling presets | ❌ | ❌ | ✅ |
+| Manage users | ❌ | ❌ | ✅ |

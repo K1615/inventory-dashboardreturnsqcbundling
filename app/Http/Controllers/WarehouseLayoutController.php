@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Models\Item;
 use App\Models\StockMovementRequest;
 use App\Models\AuditMovementLog;
+use App\Models\SystemLog;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Artisan;
@@ -81,10 +82,11 @@ class WarehouseLayoutController extends Controller
     {
         try {
             $item = Item::findOrFail($request->itemId);
+            $actingUser = \App\Support\Roles::currentNameWithRole();
 
             StockMovementRequest::create([
                 'item_id' => $item->id,
-                'requester' => $request->requester,
+                'requester' => $actingUser,
                 'from_wh' => $item->warehouse,
                 'from_zone' => $item->zone,
                 'to_wh' => $request->toWh,
@@ -92,6 +94,11 @@ class WarehouseLayoutController extends Controller
                 'qty' => $request->qty,
                 'planned_date' => $request->date,
                 'status' => 'Pending'
+            ]);
+
+            SystemLog::create([
+                'user' => $actingUser,
+                'action' => "Requested a transfer of {$request->qty}x {$item->name} from {$item->warehouse} to {$request->toWh}. Awaiting approval.",
             ]);
 
             return response()->json(['success' => true]);
@@ -104,12 +111,13 @@ class WarehouseLayoutController extends Controller
     public function storeBatchRequest(Request $request)
     {
         try {
+            $actingUser = \App\Support\Roles::currentNameWithRole();
             foreach ($request->items as $reqItem) {
                 $item = Item::findOrFail($reqItem['id']);
                 
                 StockMovementRequest::create([
                     'item_id' => $item->id,
-                    'requester' => $request->requester,
+                    'requester' => $actingUser,
                     'from_wh' => $request->srcWh,
                     'from_zone' => $item->zone,
                     'to_wh' => $request->targetWh,
@@ -119,6 +127,11 @@ class WarehouseLayoutController extends Controller
                     'status' => 'Pending'
                 ]);
             }
+
+            SystemLog::create([
+                'user' => $actingUser,
+                'action' => "Requested a batch transfer of " . count($request->items) . " item(s) from {$request->srcWh} to {$request->targetWh}. Awaiting approval.",
+            ]);
 
             return response()->json(['success' => true]);
         } catch (\Exception $e) {
@@ -144,6 +157,13 @@ class WarehouseLayoutController extends Controller
             if ($request->status === 'void') {
                 $movementRequest->status = 'Voided';
                 $movementRequest->save();
+
+                $itemName = optional(Item::find($movementRequest->item_id))->name ?? $movementRequest->item_id;
+                SystemLog::create([
+                    'user' => \App\Support\Roles::currentNameWithRole(),
+                    'action' => "Voided warehouse transfer request #{$movementRequest->id} for {$itemName}.",
+                ]);
+
                 return response()->json(['success' => true]);
             }
 
@@ -155,6 +175,12 @@ class WarehouseLayoutController extends Controller
                 if ($sourceItem->qty < $movementRequest->qty) {
                     $movementRequest->status = 'Voided';
                     $movementRequest->save();
+
+                    SystemLog::create([
+                        'user' => 'System',
+                        'action' => "Auto-voided warehouse transfer request #{$movementRequest->id} for {$sourceItem->name} — insufficient stock at source (requested {$movementRequest->qty}, had {$sourceItem->qty}).",
+                    ]);
+
                     return response()->json([
                         'success' => false, 
                         'message' => 'Action Denied: Insufficient stock at source. Request has been automatically voided.'
@@ -193,6 +219,11 @@ class WarehouseLayoutController extends Controller
                 // Step C: Mark the request as complete
                 $movementRequest->status = 'Approved';
                 $movementRequest->save();
+
+                SystemLog::create([
+                    'user' => \App\Support\Roles::currentNameWithRole(),
+                    'action' => "Approved transfer of {$movementRequest->qty}x {$sourceItem->name} from {$movementRequest->from_wh} to {$movementRequest->to_wh}.",
+                ]);
 
                 // Step D: Recalculate alerts now that quantities at both the
                 // source and destination have changed. Without this, an

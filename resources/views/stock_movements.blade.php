@@ -298,14 +298,6 @@
                         <option value="Product Return">Product Return</option>
                     </select>
                 </div>
-                <div>
-                    <label class="block font-semibold text-gray-600 mb-1">Log Created By</label>
-                    <select id="formUser" class="w-full border border-gray-300 rounded-lg px-3 py-2 bg-white focus:ring-2 focus:ring-navy focus:outline-none">
-                        <option value="Admin 1">Admin 1</option>
-                        <option value="Admin 2">Admin 2</option>
-                        <option value="Admin 3">Admin 3</option>
-                    </select>
-                </div>
             </div>
 
             <div id="warehouseRouteRow" class="grid grid-cols-2 gap-4 hidden bg-blue-50/50 p-3 rounded-lg border border-blue-100">
@@ -402,7 +394,7 @@
                 <td class="p-3 text-gray-500 max-w-xs truncate" title="${log.note}">${log.note}</td>
                 <td class="p-3 text-gray-600 font-medium">${log.user}</td>
                 <td class="p-3">
-                    <select onchange="updateTransactionStatus('${log.tx_id}', this.value)" class="border border-gray-300 rounded px-2 py-1 bg-white text-xs font-medium focus:outline-none focus:ring-1 focus:ring-navy">
+                    <select onchange="updateTransactionStatus('${log.tx_id}', this.value)" ${canDo('approve_void_movement') ? '' : 'disabled title="Requires Manager access"'} class="border border-gray-300 rounded px-2 py-1 bg-white text-xs font-medium focus:outline-none focus:ring-1 focus:ring-navy ${canDo('approve_void_movement') ? '' : 'opacity-40 cursor-not-allowed bg-gray-100'}">
                         <option value="Pending" selected>Pending</option>
                         <option value="Approved">Approve</option>
                         <option value="Voided">Void/Deny</option>
@@ -567,7 +559,7 @@
         const date = document.getElementById('formDate').value;
         const partId = document.getElementById('formItem').value;
         const type = document.getElementById('formType').value;
-        const user = document.getElementById('formUser').value;
+        const user = window.APP_USER_NAME;
         const qty = parseInt(document.getElementById('formQty').value);
         let note = document.getElementById('formNote').value;
 
