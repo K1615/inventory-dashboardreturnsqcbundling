@@ -347,7 +347,7 @@
                     <div>
                         <div class="flex items-center gap-3">
                             <h3 class="text-sm font-bold text-gray-700 uppercase tracking-wider">Products Directory Overview</h3>
-                            <button onclick="alert('Module in development')" class="text-[11px] font-bold text-white bg-emeraldGreen hover:bg-emerald-600 px-3 py-1.5 rounded-lg shadow-sm transition-colors flex items-center gap-1">
+                            <button onclick="window.location.href='{{ route('inventory.index') }}'" class="text-[11px] font-bold text-white bg-emeraldGreen hover:bg-emerald-600 px-3 py-1.5 rounded-lg shadow-sm transition-colors flex items-center gap-1">
                                 Full Page &rarr;
                             </button>
                         </div>
@@ -605,7 +605,7 @@
                     <p class="text-sm text-gray-500 mt-1">Create custom builds or select pre-built packages to request for approval.</p>
                 </div>
                 
-                <div class="bg-white px-4 py-2 rounded-lg border border-gray-200 shadow-sm flex items-center gap-3">
+                <div class=" hidden bg-white px-4 py-2 rounded-lg border border-gray-200 shadow-sm flex items-center gap-3">
                     <span class="text-sm font-bold text-navyBlue">Current User:</span>
                     <select id="userSelector" class="border border-gray-300 rounded text-sm px-2 py-1 focus:outline-none focus:border-emeraldGreen bg-white">
                         <option value="Admin 1">Admin 1</option>
