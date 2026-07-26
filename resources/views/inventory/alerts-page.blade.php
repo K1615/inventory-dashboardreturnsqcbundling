@@ -69,9 +69,7 @@
             </nav>
         </div>
 
-        <div class="p-4 border-t border-white/10 bg-black/10 flex items-center justify-between text-sm font-semibold">
-            @include('partials.authenticated-user')
-        </div>
+        @include('partials.auth-footer')
     </aside>
 
     <!-- Main Content -->

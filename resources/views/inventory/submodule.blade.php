@@ -112,10 +112,7 @@
             </nav>
         </div>
 
-        <!-- User Profile Actions -->
-        <div class="p-4 border-t border-white/10 bg-black/10 flex items-center justify-between text-sm font-semibold shrink-0">
-            @include('partials.authenticated-user')
-        </div>
+        @include('partials.auth-footer', ['indicatorClass' => 'bg-emeraldGreen'])
     </aside>
 
     <!-- Main Content Container -->
@@ -432,7 +429,7 @@
                             </div>
                             <div>
                                 <label class="block text-xs font-semibold text-gray-700 mb-1">Operator</label>
-                                <div class="w-full rounded-md border border-gray-200 bg-gray-50 p-2 text-sm font-semibold text-gray-700">
+                                <div class="w-full border border-gray-200 rounded-md p-2 text-sm bg-gray-50 text-gray-700">
                                     {{ auth()->user()->name }}
                                 </div>
                             </div>
@@ -488,7 +485,7 @@
                             </div>
                             <div>
                                 <label class="block text-xs font-semibold text-gray-700 mb-1">Operator</label>
-                                <div class="w-full rounded-md border border-gray-200 bg-gray-50 p-2 text-sm font-semibold text-gray-700">
+                                <div class="w-full border border-gray-200 rounded-md p-2 text-sm bg-gray-50 text-gray-700">
                                     {{ auth()->user()->name }}
                                 </div>
                             </div>
@@ -597,7 +594,7 @@
                 
                 <div class="bg-white px-4 py-2 rounded-lg border border-gray-200 shadow-sm flex items-center gap-3">
                     <span class="text-sm font-bold text-navyBlue">Current User:</span>
-                    <span class="text-sm font-semibold text-gray-700">{{ auth()->user()->name }}</span>
+                    <span class="text-sm text-gray-700">{{ auth()->user()->name }}</span>
                 </div>
             </header>
 
@@ -1765,7 +1762,7 @@
             const res = await fetch('/inventory/api/resolve-bundle', { 
                 method: 'POST', 
                 headers, 
-                body: JSON.stringify({ id, decision })
+                body: JSON.stringify({ id, decision }) 
             });
             
             const data = await res.json();

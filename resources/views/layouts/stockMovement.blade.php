@@ -3,7 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>ERP Inventory Management System</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -18,7 +17,7 @@
             }
         }
     </script>
-    @include('partials.auth-fetch')
+    @include('partials.authenticated-fetch')
 </head>
 <body class="bg-gray-50 font-sans text-gray-800 min-h-screen flex flex-col md:flex-row">
 
@@ -90,9 +89,7 @@
                 
             </nav>
         </div>
-        <div class="p-4 border-t border-white/10 bg-black/10 flex items-center justify-between text-sm font-semibold">
-            @include('partials.authenticated-user')
-        </div>
+        @include('partials.auth-footer', ['indicatorClass' => 'bg-emeraldAccent'])
     </aside>
 
     <!-- Content injected here -->

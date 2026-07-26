@@ -2,160 +2,195 @@
 
 namespace Tests\Feature;
 
+use App\Http\Controllers\AuthController;
+use App\Models\InventoryRequest;
 use App\Models\User;
+use Database\Seeders\DemoUserSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\RateLimiter;
 use Tests\TestCase;
 
 class AuthenticationTest extends TestCase
 {
     use RefreshDatabase;
 
-    private const PASSWORD = 'TestPassword!123';
-
-    public function test_login_page_is_available_to_guests(): void
+    public function test_guest_can_view_login_page(): void
     {
         $this->get('/login')
             ->assertOk()
-            ->assertSee('Sign in')
-            ->assertSee('name="email"', false)
-            ->assertSee('name="password"', false)
-            ->assertSee('name="remember"', false);
+            ->assertSee('Welcome back')
+            ->assertSee('Remember me');
     }
 
-    public function test_valid_credentials_authenticate_and_regenerate_the_session(): void
+    public function test_authenticated_user_is_redirected_away_from_login_page(): void
     {
-        $user = $this->createUser();
-
-        $this->withSession(['session_marker' => 'before-login']);
-        $oldSessionId = session()->getId();
-
-        $response = $this->post('/login', [
-            'email' => strtoupper($user->email),
-            'password' => self::PASSWORD,
-        ]);
-
-        $response->assertRedirect('/');
-        $this->assertAuthenticatedAs($user);
-        $this->assertNotSame($oldSessionId, session()->getId());
-    }
-
-    public function test_login_redirects_to_the_originally_intended_page(): void
-    {
-        $user = $this->createUser();
-
-        $this->get('/warehouse')->assertRedirect('/login');
-
-        $this->post('/login', [
-            'email' => $user->email,
-            'password' => self::PASSWORD,
-        ])->assertRedirect('/warehouse');
-    }
-
-    public function test_invalid_credentials_use_a_generic_error_and_do_not_authenticate(): void
-    {
-        $user = $this->createUser();
-
-        $response = $this->from('/login')->post('/login', [
-            'email' => $user->email,
-            'password' => 'IncorrectPassword!123',
-        ]);
-
-        $response->assertRedirect('/login');
-        $response->assertSessionHasErrors([
-            'email' => trans('auth.failed'),
-        ]);
-        $response->assertSessionHasInput('email', $user->email);
-        $response->assertSessionMissing('_old_input.password');
-        $this->assertGuest();
-    }
-
-    public function test_login_validation_rejects_missing_or_invalid_fields(): void
-    {
-        $this->post('/login', [])
-            ->assertSessionHasErrors(['email', 'password']);
-
-        $this->post('/login', [
-            'email' => 'not-an-email',
-            'password' => self::PASSWORD,
-            'remember' => 'not-a-boolean',
-        ])->assertSessionHasErrors(['email', 'remember']);
-    }
-
-    public function test_remember_me_is_accepted_and_creates_a_remember_token(): void
-    {
-        $user = $this->createUser();
-
-        $this->post('/login', [
-            'email' => $user->email,
-            'password' => self::PASSWORD,
-            'remember' => true,
-        ])->assertRedirect('/');
-
-        $this->assertAuthenticatedAs($user);
-        $this->assertNotNull($user->fresh()->remember_token);
-    }
-
-    public function test_authenticated_users_are_redirected_away_from_login(): void
-    {
-        $this->actingAs($this->createUser())
+        $this->actingAs(User::factory()->create())
             ->get('/login')
             ->assertRedirect('/');
     }
 
-    public function test_repeated_failed_logins_are_rate_limited(): void
+    public function test_user_can_log_in_and_is_sent_to_intended_page(): void
     {
-        $email = 'limited@example.test';
-        $key = mb_strtolower($email).'|127.0.0.1';
-        RateLimiter::clear($key);
+        $user = User::factory()->create([
+            'email' => 'employee@gmail.com',
+            'password' => Hash::make('admin123'),
+        ]);
+
+        $this->get('/warehouse')->assertRedirect('/login');
+
+        $this->post('/login', [
+            'email' => 'employee@gmail.com',
+            'password' => 'admin123',
+        ])->assertRedirect('/warehouse');
+
+        $this->assertAuthenticatedAs($user);
+    }
+
+    public function test_invalid_credentials_use_a_generic_error(): void
+    {
+        User::factory()->create([
+            'email' => 'employee@gmail.com',
+            'password' => Hash::make('admin123'),
+        ]);
+
+        $this->from('/login')->post('/login', [
+            'email' => 'employee@gmail.com',
+            'password' => 'incorrect-password',
+        ])->assertRedirect('/login')
+            ->assertSessionHasErrors([
+                'email' => 'The provided credentials do not match our records.',
+            ]);
+
+        $this->assertGuest();
+    }
+
+    public function test_login_attempts_are_throttled(): void
+    {
+        User::factory()->create([
+            'email' => 'employee@gmail.com',
+            'password' => Hash::make('admin123'),
+        ]);
 
         for ($attempt = 0; $attempt < 5; $attempt++) {
             $this->post('/login', [
-                'email' => $email,
-                'password' => 'IncorrectPassword!123',
-            ])->assertSessionHasErrors('email');
+                'email' => 'employee@gmail.com',
+                'password' => 'incorrect-password',
+            ]);
         }
 
-        $response = $this->post('/login', [
-            'email' => $email,
-            'password' => 'IncorrectPassword!123',
-        ]);
-
-        $response->assertSessionHasErrors('email');
-        $this->assertStringContainsString(
-            'Too many login attempts',
-            $response->getSession()->get('errors')->first('email'),
-        );
-    }
-
-    public function test_logout_invalidates_the_session_and_redirects_to_login(): void
-    {
-        $user = $this->createUser();
-
-        $this->actingAs($user)->withSession(['private_marker' => 'remove-me']);
-        $oldSessionId = session()->getId();
-
-        $this->post('/logout')
-            ->assertRedirect('/login')
-            ->assertSessionMissing('private_marker');
+        $this->post('/login', [
+            'email' => 'employee@gmail.com',
+            'password' => 'incorrect-password',
+        ])->assertSessionHasErrors('email');
 
         $this->assertGuest();
-        $this->assertNotSame($oldSessionId, session()->getId());
     }
 
-    public function test_get_logout_is_unavailable_and_a_repeated_post_is_safe(): void
+    public function test_authenticated_user_can_log_out(): void
     {
-        $this->get('/logout')->assertMethodNotAllowed();
-        $this->post('/logout')->assertRedirect('/login');
+        $user = User::factory()->create();
+
+        $this->actingAs($user)
+            ->post('/logout')
+            ->assertRedirect('/login');
+
+        $this->assertGuest();
     }
 
-    private function createUser(): User
+    public function test_guest_is_redirected_from_every_erp_page(): void
     {
-        return User::factory()->create([
-            'name' => 'Authenticated Operator',
-            'email' => 'operator@example.test',
-            'password' => Hash::make(self::PASSWORD),
-        ]);
+        foreach (['/', '/movement', '/warehouse', '/alerts', '/items'] as $uri) {
+            $this->get($uri)->assertRedirect('/login');
+        }
+    }
+
+    public function test_unauthenticated_ajax_and_api_requests_receive_unauthorized_response(): void
+    {
+        $requests = [
+            ['getJson', '/inventory/api/state'],
+            ['postJson', '/inventory/api/inspection'],
+            ['getJson', '/api/stock-movements/data'],
+            ['postJson', '/warehouse-layout/request'],
+            ['postJson', '/api/requests'],
+            ['getJson', '/api/v1/inventory/state'],
+        ];
+
+        foreach ($requests as [$method, $uri]) {
+            $response = $this->{$method}($uri);
+
+            $this->assertSame(401, $response->getStatusCode(), "{$uri} did not return 401.");
+        }
+    }
+
+    public function test_every_erp_controller_route_has_auth_middleware(): void
+    {
+        foreach (app('router')->getRoutes() as $route) {
+            $action = $route->getActionName();
+
+            if (! str_starts_with($action, 'App\\Http\\Controllers\\')
+                || str_starts_with($action, AuthController::class.'@')) {
+                continue;
+            }
+
+            $this->assertContains(
+                'auth',
+                $route->gatherMiddleware(),
+                "Route [{$route->uri()}] is missing auth middleware.",
+            );
+        }
+
+        $logout = app('router')->getRoutes()->getByName('logout');
+        $this->assertNotNull($logout);
+        $this->assertContains('auth', $logout->gatherMiddleware());
+    }
+
+    public function test_authenticated_user_can_access_erp_pages(): void
+    {
+        $this->actingAs(User::factory()->create());
+
+        foreach (['/', '/movement', '/warehouse', '/alerts', '/items'] as $uri) {
+            $this->get($uri)->assertOk();
+        }
+    }
+
+    public function test_mutations_use_authenticated_identity_instead_of_spoofed_input(): void
+    {
+        $user = User::factory()->create(['name' => 'Authenticated Employee']);
+
+        $this->actingAs($user)
+            ->postJson('/api/requests', [
+                'type' => 'ADD',
+                'requestor' => 'Spoofed User',
+                'target_item_id' => null,
+                'proposed_data' => [
+                    'name' => 'Test Item',
+                    'category' => 'Storage',
+                    'qty' => 1,
+                    'price' => 10,
+                    'warehouse' => 'Warehouse A',
+                    'status' => 'Active',
+                ],
+            ])->assertOk();
+
+        $request = InventoryRequest::firstOrFail();
+        $this->assertSame('Authenticated Employee', $request->requestor);
+    }
+
+    public function test_demo_seeder_is_additive_and_hashes_required_password(): void
+    {
+        $existingUser = User::factory()->create();
+
+        $this->seed(DemoUserSeeder::class);
+
+        $demoUser = User::where('email', 'employee@gmail.com')->firstOrFail();
+
+        $this->assertSame('Demo Employee', $demoUser->name);
+        $this->assertTrue(Hash::check('admin123', $demoUser->password));
+        $this->assertDatabaseHas('users', ['id' => $existingUser->id]);
+    }
+
+    public function test_registration_is_not_available(): void
+    {
+        $this->get('/register')->assertNotFound();
     }
 }

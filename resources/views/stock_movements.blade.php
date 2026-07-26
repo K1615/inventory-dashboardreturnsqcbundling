@@ -45,27 +45,51 @@
 
         <!-- SECTION 1: ACTIVE TRANSACTION REQUESTS -->
         <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
-                <div>
-                    <h2 class="text-lg font-bold text-navy">Transaction Requests</h2>
-                    <p class="text-xs text-gray-500">Active or unverified order movements awaiting completion status</p>
-                </div>
+            <!-- Card Header Container -->
+      <div class="flex items-center justify-between gap-4 mb-4">
+        <div>
+          <h2 class="text-lg font-bold text-navy">Transaction Requests</h2>
+          <p class="text-xs text-gray-500">Active or unverified order movements awaiting completion status</p>
+        </div>
 
-                <!-- FILTER CONTROLS FOR REQUESTS -->
-                <div class="flex flex-wrap items-center gap-2">
-                    <select 
-                        id="requestTypeFilter" 
-                        class="border border-gray-300 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-navy bg-white"
-                        onchange="filterRequestTable()"
-                    >
-                        <option value="All">All Types</option>
-                        <option value="Stock-In">Stock-In</option>
-                        <option value="Stock-Out">Stock-Out</option>
-                        <option value="Warehouse Transfer">Warehouse Transfer</option>
-                        <option value="Product Return">Product Return</option>
-                    </select>
-                </div>
-            </div>
+        <!-- Custom Dropdown Container -->
+        <div class="relative text-left" id="customFilterContainer">
+          
+          <!-- Hidden Native Select (Keeps JS Table Filter Working) -->
+          <select id="requestTypeFilter" class="hidden" onchange="filterRequestTable()">
+            <option value="All">All Types</option>
+            <option value="Stock-In">Stock-In</option>
+            <option value="Stock-Out">Stock-Out</option>
+            <option value="Warehouse Transfer">Warehouse Transfer</option>
+            <option value="Product Return">Product Return</option>
+          </select>
+
+          <!-- Animated Filter Button -->
+          <button
+            type="button"
+            onclick="toggleDropdown()"
+            class="flex items-center justify-between w-44 px-3.5 py-1.5 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded-lg shadow-sm hover:border-blue-500 hover:ring-2 hover:ring-blue-100 transition-all duration-200 focus:outline-none cursor-pointer"
+          >
+            <span id="selectedOptionText">All Types</span>
+            <svg id="dropdownChevron" class="w-4 h-4 text-gray-400 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+            </svg>
+          </button>
+
+          <!-- Animated Options Menu -->
+          <div
+            id="customDropdownMenu"
+            class="hidden absolute right-0 z-30 w-48 mt-1 bg-white rounded-lg shadow-lg border border-gray-200 py-1 opacity-0 scale-95 transition-all duration-150 origin-top-right"
+          >
+            <button type="button" onclick="selectFilterOption('All', 'All Types')" class="w-full text-left px-3 py-1.5 text-xs text-gray-700 hover:bg-blue-50 hover:text-blue-600 block transition-colors">All Types</button>
+            <button type="button" onclick="selectFilterOption('Stock-In', 'Stock-In')" class="w-full text-left px-3 py-1.5 text-xs text-gray-700 hover:bg-emerald-50 hover:text-emerald-600 block transition-colors">Stock-In</button>
+            <button type="button" onclick="selectFilterOption('Stock-Out', 'Stock-Out')" class="w-full text-left px-3 py-1.5 text-xs text-gray-700 hover:bg-amber-50 hover:text-amber-600 block transition-colors">Stock-Out</button>
+            <button type="button" onclick="selectFilterOption('Warehouse Transfer', 'Warehouse Transfer')" class="w-full text-left px-3 py-1.5 text-xs text-gray-700 hover:bg-indigo-50 hover:text-indigo-600 block transition-colors">Warehouse Transfer</button>
+            <button type="button" onclick="selectFilterOption('Product Return', 'Product Return')" class="w-full text-left px-3 py-1.5 text-xs text-gray-700 hover:bg-rose-50 hover:text-rose-600 block transition-colors">Product Return</button>
+          </div>
+
+        </div>
+      </div>
 
             <div class="overflow-x-auto">
                 <table class="w-full text-left text-xs border-collapse">
@@ -89,25 +113,47 @@
 
         <!-- SECTION 2: FINALIZED TRANSACTION LOGS -->
         <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
-                <div>
-                    <h2 class="text-lg font-bold text-navy">Finalized Transaction History</h2>
-                    <p class="text-xs text-gray-500">Completed tracking archives of all approved or voided stock updates</p>
-                </div>
-                
-                <!-- FILTER CONTROLS FOR LOGS -->
-                <div class="flex flex-wrap items-center gap-2">
-                    <select 
-                        id="logStatusFilter" 
-                        class="border border-gray-300 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-navy bg-white"
-                        onchange="filterHistoryTable()"
-                    >
-                        <option value="All">All Outcomes</option>
-                        <option value="Approved">Approved</option>
-                        <option value="Voided">Voided</option>
-                    </select>
-                </div>
-            </div>
+            <!-- Card Header Container -->
+      <div class="flex items-center justify-between gap-4 mb-4">
+        <div>
+          <h2 class="text-lg font-bold text-navy">Finalized Transaction History</h2>
+          <p class="text-xs text-gray-500">Completed tracking archives of all approved or voided stock updates</p>
+        </div>
+
+        <!-- Custom Dropdown Container -->
+        <div class="relative text-left" id="customOutcomeContainer">
+          
+          <!-- Hidden Native Select (Preserves existing logStatusFilter logic) -->
+          <select id="logStatusFilter" class="hidden" onchange="filterHistoryTable()">
+            <option value="All">All Outcomes</option>
+            <option value="Approved">Approved</option>
+            <option value="Voided">Voided</option>
+          </select>
+
+          <!-- Animated Button -->
+          <button
+            type="button"
+            onclick="toggleOutcomeDropdown()"
+            class="flex items-center justify-between w-40 px-3.5 py-1.5 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded-lg shadow-sm hover:border-blue-500 hover:ring-2 hover:ring-blue-100 transition-all duration-200 focus:outline-none cursor-pointer"
+          >
+            <span id="selectedOutcomeText">All Outcomes</span>
+            <svg id="outcomeChevron" class="w-4 h-4 text-gray-400 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+            </svg>
+          </button>
+
+          <!-- Options Menu -->
+          <div
+            id="customOutcomeMenu"
+            class="hidden absolute right-0 z-30 w-44 mt-1 bg-white rounded-lg shadow-lg border border-gray-200 py-1 opacity-0 scale-95 transition-all duration-150 origin-top-right"
+          >
+            <button type="button" onclick="selectOutcomeOption('All', 'All Outcomes')" class="w-full text-left px-3 py-1.5 text-xs text-gray-700 hover:bg-blue-50 hover:text-blue-600 block transition-colors">All Outcomes</button>
+            <button type="button" onclick="selectOutcomeOption('Approved', 'Approved')" class="w-full text-left px-3 py-1.5 text-xs text-gray-700 hover:bg-emerald-50 hover:text-emerald-600 block transition-colors">Approved</button>
+            <button type="button" onclick="selectOutcomeOption('Voided', 'Voided')" class="w-full text-left px-3 py-1.5 text-xs text-gray-700 hover:bg-rose-50 hover:text-rose-600 block transition-colors">Voided</button>
+          </div>
+
+        </div>
+      </div>
 
             <div class="overflow-x-auto">
                 <table class="w-full text-left text-xs border-collapse">
@@ -146,19 +192,51 @@
                         class="border border-gray-300 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-navy w-44"
                         oninput="filterInventoryTable()"
                     >
-                    <select 
-                        id="partCategory" 
-                        class="border border-gray-300 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-navy bg-white"
-                        onchange="filterInventoryTable()"
-                    >
-                        <option value="All">All Categories</option>
-                        <option value="CPU">CPU</option>
-                        <option value="GPU">GPU</option>
-                        <option value="RAM">RAM</option>
-                        <option value="Storage">Storage</option>
-                        <option value="Motherboard">Motherboard</option>
-                        <option value="PSU">PSU</option>
-                    </select>
+                    <!-- Custom Category Dropdown Container -->
+       <div class="relative text-left" id="customCategoryContainer">
+      
+      <!-- Hidden Native Select (Matches table badge names for filter JS) -->
+      <select id="partCategory" class="hidden" onchange="filterInventoryTable()">
+        <option value="All">All Categories</option>
+        <option value="Processor">Processor</option>
+        <option value="Graphics Card">Graphics Card</option>
+        <option value="Memory">Memory</option>
+        <option value="Storage">Storage</option>
+        <option value="Motherboard">Motherboard</option>
+        <option value="Power Supply">Power Supply</option>
+        <option value="Case">Case</option>
+        <option value="Cooler">Cooler</option>
+      </select>
+
+      <!-- Animated Filter Button -->
+      <button
+        type="button"
+        onclick="toggleCategoryDropdown()"
+        class="flex items-center justify-between w-40 px-3.5 py-1.5 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded-lg shadow-sm hover:border-blue-500 hover:ring-2 hover:ring-blue-100 transition-all duration-200 focus:outline-none cursor-pointer"
+      >
+        <span id="selectedCategoryText">All Categories</span>
+        <svg id="categoryChevron" class="w-4 h-4 text-gray-400 transition-transform duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+        </svg>
+      </button>
+
+      <!-- Options Menu -->
+      <div
+        id="customCategoryMenu"
+        class="hidden absolute right-0 z-30 w-44 mt-1 bg-white rounded-lg shadow-lg border border-gray-200 py-1 opacity-0 scale-95 transition-all duration-150 origin-top-right max-h-60 overflow-y-auto"
+      >
+        <button type="button" onclick="selectCategoryOption('All', 'All Categories')" class="w-full text-left px-3 py-1.5 text-xs text-gray-700 hover:bg-blue-50 hover:text-blue-600 block transition-colors">All Categories</button>
+        <button type="button" onclick="selectCategoryOption('Processor', 'Processor')" class="w-full text-left px-3 py-1.5 text-xs text-gray-700 hover:bg-blue-50 hover:text-blue-600 block transition-colors">Processor</button>
+        <button type="button" onclick="selectCategoryOption('Graphics Card', 'Graphics Card')" class="w-full text-left px-3 py-1.5 text-xs text-gray-700 hover:bg-blue-50 hover:text-blue-600 block transition-colors">Graphics Card</button>
+        <button type="button" onclick="selectCategoryOption('Memory', 'Memory')" class="w-full text-left px-3 py-1.5 text-xs text-gray-700 hover:bg-blue-50 hover:text-blue-600 block transition-colors">Memory</button>
+        <button type="button" onclick="selectCategoryOption('Storage', 'Storage')" class="w-full text-left px-3 py-1.5 text-xs text-gray-700 hover:bg-blue-50 hover:text-blue-600 block transition-colors">Storage</button>
+        <button type="button" onclick="selectCategoryOption('Motherboard', 'Motherboard')" class="w-full text-left px-3 py-1.5 text-xs text-gray-700 hover:bg-blue-50 hover:text-blue-600 block transition-colors">Motherboard</button>
+        <button type="button" onclick="selectCategoryOption('Power Supply', 'Power Supply')" class="w-full text-left px-3 py-1.5 text-xs text-gray-700 hover:bg-blue-50 hover:text-blue-600 block transition-colors">Power Supply</button>
+        <button type="button" onclick="selectCategoryOption('Case', 'Case')" class="w-full text-left px-3 py-1.5 text-xs text-gray-700 hover:bg-blue-50 hover:text-blue-600 block transition-colors">Case</button>
+        <button type="button" onclick="selectCategoryOption('Cooler', 'Cooler')" class="w-full text-left px-3 py-1.5 text-xs text-gray-700 hover:bg-blue-50 hover:text-blue-600 block transition-colors">Cooler</button>
+      </div>
+
+    </div>
                 </div>
             </div>
 
@@ -222,7 +300,7 @@
                 </div>
                 <div>
                     <label class="block font-semibold text-gray-600 mb-1">Log Created By</label>
-                    <div class="w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 font-semibold text-gray-700">
+                    <div class="w-full border border-gray-200 rounded-lg px-3 py-2 bg-gray-50 text-gray-700">
                         {{ auth()->user()->name }}
                     </div>
                 </div>
@@ -397,6 +475,9 @@
         })
         .then(res => res.json())
         .then(data => {
+            // DEBUG: See exactly what the backend returned
+            console.log("Backend Response:", data); 
+
             if (data.success) {
                 fetchDashboardData();
             } else {
@@ -575,5 +656,135 @@
             }
         });
     }
+
+    // Toggle custom dropdown open/close with animation
+function toggleDropdown() {
+    const menu = document.getElementById('customDropdownMenu');
+    const chevron = document.getElementById('dropdownChevron');
+
+    if (menu.classList.contains('hidden')) {
+        menu.classList.remove('hidden');
+        setTimeout(() => {
+            menu.classList.remove('opacity-0', 'scale-95');
+            menu.classList.add('opacity-100', 'scale-100');
+        }, 10);
+        chevron.classList.add('rotate-180');
+    } else {
+        closeDropdown();
+    }
+}
+
+// Close dropdown smoothly
+function closeDropdown() {
+    const menu = document.getElementById('customDropdownMenu');
+    const chevron = document.getElementById('dropdownChevron');
+    
+    if (!menu) return;
+    
+    menu.classList.remove('opacity-100', 'scale-100');
+    menu.classList.add('opacity-0', 'scale-95');
+    chevron.classList.remove('rotate-180');
+    
+    setTimeout(() => {
+        menu.classList.add('hidden');
+    }, 200);
+}
+
+// Handle option click: updates hidden select & triggers existing filter function
+function selectFilterOption(value, label) {
+    document.getElementById('selectedOptionText').innerText = label;
+    
+    const hiddenSelect = document.getElementById('requestTypeFilter');
+    hiddenSelect.value = value;
+    
+    // Call your existing table filter logic!
+    if (typeof filterRequestTable === 'function') {
+        filterRequestTable();
+    }
+
+    closeDropdown();
+}
+
+// Close dropdown if clicked outside
+window.addEventListener('click', function(e) {
+    const container = document.getElementById('customFilterContainer');
+    if (container && !container.contains(e.target)) {
+        closeDropdown();
+    }
+});
+// --- OUTCOME DROPDOWN LOGIC ---
+function toggleOutcomeDropdown() {
+  const menu = document.getElementById('customOutcomeMenu');
+  const chevron = document.getElementById('outcomeChevron');
+  
+  if (menu.classList.contains('hidden')) {
+    menu.classList.remove('hidden');
+    setTimeout(() => {
+      menu.classList.remove('opacity-0', 'scale-95');
+      chevron.classList.add('rotate-180');
+    }, 10);
+  } else {
+    closeOutcomeDropdown();
+  }
+}
+
+function closeOutcomeDropdown() {
+  const menu = document.getElementById('customOutcomeMenu');
+  const chevron = document.getElementById('outcomeChevron');
+  if (!menu) return;
+  
+  chevron.classList.remove('rotate-180');
+  menu.classList.add('opacity-0', 'scale-95');
+  setTimeout(() => menu.classList.add('hidden'), 150);
+}
+
+function selectOutcomeOption(value, label) {
+  document.getElementById('selectedOutcomeText').innerText = label;
+  const select = document.getElementById('logStatusFilter');
+  if (select) {
+    select.value = value;
+    if (typeof filterHistoryTable === 'function') {
+      filterHistoryTable();
+    }
+  }
+  closeOutcomeDropdown();
+}
+// --- CATEGORY DROPDOWN LOGIC ---
+function toggleCategoryDropdown() {
+  const menu = document.getElementById('customCategoryMenu');
+  const chevron = document.getElementById('categoryChevron');
+  
+  if (menu.classList.contains('hidden')) {
+    menu.classList.remove('hidden');
+    setTimeout(() => {
+      menu.classList.remove('opacity-0', 'scale-95');
+      chevron.classList.add('rotate-180');
+    }, 10);
+  } else {
+    closeCategoryDropdown();
+  }
+}
+
+function closeCategoryDropdown() {
+  const menu = document.getElementById('customCategoryMenu');
+  const chevron = document.getElementById('categoryChevron');
+  if (!menu) return;
+  
+  chevron.classList.remove('rotate-180');
+  menu.classList.add('opacity-0', 'scale-95');
+  setTimeout(() => menu.classList.add('hidden'), 150);
+}
+
+function selectCategoryOption(value, label) {
+  document.getElementById('selectedCategoryText').innerText = label;
+  const select = document.getElementById('partCategory');
+  if (select) {
+    select.value = value;
+    if (typeof filterInventoryTable === 'function') {
+      filterInventoryTable();
+    }
+  }
+  closeCategoryDropdown();
+}
 </script>
 @endsection

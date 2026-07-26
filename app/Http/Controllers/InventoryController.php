@@ -2,11 +2,11 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\InventoryRequest;
-use App\Models\Item;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Artisan;
+use App\Models\Item;
+use App\Models\InventoryRequest;
 
 class InventoryController extends Controller
 {
@@ -26,7 +26,7 @@ class InventoryController extends Controller
         $validated = $request->validate([
             'type' => 'required|in:ADD,EDIT,DELETE',
             'target_item_id' => 'nullable|string', // <-- ALLOWS STRING IDs
-            'proposed_data' => 'required|array',
+            'proposed_data' => 'required|array'
         ]);
 
         $newRequest = InventoryRequest::create([
@@ -34,7 +34,7 @@ class InventoryController extends Controller
             'requestor' => $request->user()->name,
             'target_item_id' => $validated['target_item_id'] ?? null,
             'proposed_data' => $validated['proposed_data'],
-            'outcome' => 'PENDING',
+            'outcome' => 'PENDING'
         ]);
 
         return response()->json(['success' => true, 'request' => $newRequest]);
@@ -48,7 +48,7 @@ class InventoryController extends Controller
         ]);
 
         $invRequest = InventoryRequest::findOrFail($id);
-
+        
         if ($invRequest->outcome !== 'PENDING') {
             return response()->json(['success' => false, 'message' => 'This record was already resolved.'], 400);
         }
@@ -59,7 +59,7 @@ class InventoryController extends Controller
 
             if ($invRequest->type === 'ADD') {
                 Item::create([
-                    'id' => 'PRD-'.strtoupper(Str::random(8)),
+                    'id' => 'PRD-' . strtoupper(\Illuminate\Support\Str::random(8)),
                     'name' => $data['name'],
                     'category' => $data['category'],
                     'qty' => $data['qty'],
@@ -67,7 +67,7 @@ class InventoryController extends Controller
                     'warehouse' => $data['warehouse'],
                     'zone' => $data['location'] ?? null, // Correctly mapped to the 'zone' column
                     'status' => $data['status'],
-                    'desc' => $data['desc'] ?? null,
+                    'desc' => $data['desc'] ?? null
                 ]);
             } elseif ($invRequest->type === 'EDIT') {
                 $item = Item::findOrFail($invRequest->target_item_id);
@@ -79,7 +79,7 @@ class InventoryController extends Controller
                     'warehouse' => $data['warehouse'],
                     'zone' => $data['location'] ?? null, // Correctly mapped to the 'zone' column
                     'status' => $data['status'],
-                    'desc' => $data['desc'] ?? null,
+                    'desc' => $data['desc'] ?? null
                 ]);
             } elseif ($invRequest->type === 'DELETE') {
                 $item = Item::findOrFail($invRequest->target_item_id);

@@ -3,7 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'PC Parts Stock Manager')</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -15,7 +14,7 @@
             }
         }
     </script>
-    @include('partials.auth-fetch')
+    @include('partials.authenticated-fetch')
 </head>
 <body class="bg-gray-50 text-gray-800 font-sans min-h-screen flex flex-col md:flex-row">
     <aside class="w-full md:w-64 bg-navyBlue text-white flex flex-col justify-between md:sticky md:top-0 md:h-screen shadow-xl z-20 shrink-0">
@@ -85,9 +84,7 @@
                 
             </nav>
         </div>
-        <div class="p-4 border-t border-white/10 bg-black/10 flex items-center justify-between text-sm font-semibold">
-            @include('partials.authenticated-user')
-        </div>
+        @include('partials.auth-footer', ['indicatorClass' => 'bg-emeraldGreen'])
     </aside>
     <main class="flex-1 max-w-full p-6 space-y-8 overflow-y-auto h-screen">
         @yield('content')

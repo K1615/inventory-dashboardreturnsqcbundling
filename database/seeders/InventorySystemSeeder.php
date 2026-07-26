@@ -76,34 +76,34 @@ class InventorySystemSeeder extends Seeder
 
         // Restoring Original System Logs
         $logs = [
-            ['user' => "admin1", 'action' => "Transferred 20 units of Corsair DDR5 RAM kits from Zone A shelving to Zone C locker row 4.", 'created_at' => "2026-07-13 09:14:02"],
-            ['user' => "manager2", 'action' => "Approved bulk restocking transaction intake for 10 units of Intel Core i9 CPUs.", 'created_at' => "2026-07-13 08:35:50"],
-            ['user' => "admin4", 'action' => "Flagged 3 units of Seasonic Vertex Power Supplies as defective under vendor RMA tracking.", 'created_at' => "2026-07-13 07:11:15"],
-            ['user' => "system_proc", 'action' => "Automated alert triggered: NVIDIA RTX 4090 stock level reached 0 units threshold limit.", 'created_at' => "2026-07-13 06:00:01"],
-            ['user' => "admin1", 'action' => "Created master catalog entry layout model for PCIe Gen5 Storage lines.", 'created_at' => "2026-07-12 16:40:22"],
-            ['user' => "manager1", 'action' => "Completed manual stock reconciliation count inside Central CPU storage cage.", 'created_at' => "2026-07-12 14:15:00"],
-            ['user' => "admin2", 'action' => "Dispatched 5 units of ASUS RTX 4070 graphic boards to shipping floor.", 'created_at' => "2026-07-12 11:24:43"],
-            ['user' => "admin3", 'action' => "Relocated 15 units of Samsung 990 Pro SSDs into priority distribution dispatch lanes.", 'created_at' => "2026-07-12 09:05:12"],
-            ['user' => "manager2", 'action' => "Updated safety alert threshold metrics across baseline GPU stock values.", 'created_at' => "2026-07-11 15:30:00"],
-            ['user' => "admin1", 'action' => "Logged manufacturer warranty certificate papers for inbound Kingston memory.", 'created_at' => "2026-07-11 10:22:18"]
+            ['user' => 'Demo Employee', 'action' => "Transferred 20 units of Corsair DDR5 RAM kits from Zone A shelving to Zone C locker row 4.", 'created_at' => "2026-07-13 09:14:02"],
+            ['user' => 'Demo Employee', 'action' => "Approved bulk restocking transaction intake for 10 units of Intel Core i9 CPUs.", 'created_at' => "2026-07-13 08:35:50"],
+            ['user' => 'Demo Employee', 'action' => "Flagged 3 units of Seasonic Vertex Power Supplies as defective under vendor RMA tracking.", 'created_at' => "2026-07-13 07:11:15"],
+            ['user' => 'Auto-Reorder System', 'action' => "Automated alert triggered: NVIDIA RTX 4090 stock level reached 0 units threshold limit.", 'created_at' => "2026-07-13 06:00:01"],
+            ['user' => 'Demo Employee', 'action' => "Created master catalog entry layout model for PCIe Gen5 Storage lines.", 'created_at' => "2026-07-12 16:40:22"],
+            ['user' => 'Demo Employee', 'action' => "Completed manual stock reconciliation count inside Central CPU storage cage.", 'created_at' => "2026-07-12 14:15:00"],
+            ['user' => 'Demo Employee', 'action' => "Dispatched 5 units of ASUS RTX 4070 graphic boards to shipping floor.", 'created_at' => "2026-07-12 11:24:43"],
+            ['user' => 'Demo Employee', 'action' => "Relocated 15 units of Samsung 990 Pro SSDs into priority distribution dispatch lanes.", 'created_at' => "2026-07-12 09:05:12"],
+            ['user' => 'Demo Employee', 'action' => "Updated safety alert threshold metrics across baseline GPU stock values.", 'created_at' => "2026-07-11 15:30:00"],
+            ['user' => 'Demo Employee', 'action' => "Logged manufacturer warranty certificate papers for inbound Kingston memory.", 'created_at' => "2026-07-11 10:22:18"]
         ];
         foreach ($logs as $log) { SystemLog::create($log); }
 
         // Restoring Pending Inspections
-        QcInspection::create(['id' => 'REQ-I-101', 'op' => 'admin2', 'itemId' => 'P008', 'product' => 'WD Blue 4TB HDD', 'source' => 'Customer Aftersales', 'action' => 'Damaged - Move to Quarantine', 'status' => 'Pending', 'created_at' => '2026-07-13 09:15:00']);
-        QcInspection::create(['id' => 'REQ-I-102', 'op' => 'admin1', 'itemId' => 'PRD-001', 'product' => 'Gigabyte M27Q Monitor', 'source' => 'Warehouse Transfer', 'action' => 'Good - Clear for Restock', 'status' => 'Pending', 'created_at' => '2026-07-13 10:30:00']);
+        QcInspection::create(['id' => 'REQ-I-101', 'op' => 'Demo Employee', 'itemId' => 'P008', 'product' => 'WD Blue 4TB HDD', 'source' => 'Customer Aftersales', 'action' => 'Damaged - Move to Quarantine', 'status' => 'Pending', 'created_at' => '2026-07-13 09:15:00']);
+        QcInspection::create(['id' => 'REQ-I-102', 'op' => 'Demo Employee', 'itemId' => 'PRD-001', 'product' => 'Gigabyte M27Q Monitor', 'source' => 'Warehouse Transfer', 'action' => 'Good - Clear for Restock', 'status' => 'Pending', 'created_at' => '2026-07-13 10:30:00']);
 
         // Restoring Pending RMAs
-        RmaRequest::create(['id' => 'REQ-R-201', 'op' => 'admin3', 'itemId' => 'PC-003', 'product' => 'NVIDIA RTX 4090', 'vendor' => 'NVIDIA', 'reasons' => 'Dead on Arrival (DOA), Failed QC Bench Test', 'status' => 'Pending', 'created_at' => '2026-07-13 11:05:00']);
-        RmaRequest::create(['id' => 'REQ-R-202', 'op' => 'admin1', 'itemId' => 'P002', 'product' => 'AMD Ryzen 9 7950X', 'vendor' => 'AMD', 'reasons' => 'Physical Defect', 'status' => 'Pending', 'created_at' => '2026-07-13 11:45:00']);
+        RmaRequest::create(['id' => 'REQ-R-201', 'op' => 'Demo Employee', 'itemId' => 'PC-003', 'product' => 'NVIDIA RTX 4090', 'vendor' => 'NVIDIA', 'reasons' => 'Dead on Arrival (DOA), Failed QC Bench Test', 'status' => 'Pending', 'created_at' => '2026-07-13 11:05:00']);
+        RmaRequest::create(['id' => 'REQ-R-202', 'op' => 'Demo Employee', 'itemId' => 'P002', 'product' => 'AMD Ryzen 9 7950X', 'vendor' => 'AMD', 'reasons' => 'Physical Defect', 'status' => 'Pending', 'created_at' => '2026-07-13 11:45:00']);
 
         // Restoring Returns Audit Logs
         $audits = [
-            ['op' => 'admin2', 'stream' => 'Inspection', 'info' => 'Fractal Design Meshify C (Source: Warehouse)', 'outcome' => 'Approved: Restocked', 'statusType' => 'success', 'created_at' => '2026-07-12 16:20:00'],
-            ['op' => 'admin3', 'stream' => 'RMA', 'info' => 'MSI MPG A850G (Vendor: MSI - Reason: DOA)', 'outcome' => 'Approved: Returned to Mfg', 'statusType' => 'neutral', 'created_at' => '2026-07-12 15:10:00'],
-            ['op' => 'admin1', 'stream' => 'Inspection', 'info' => 'Lian Li UNI FAN SL120', 'outcome' => 'Voided by Manager', 'statusType' => 'void', 'created_at' => '2026-07-12 14:05:00'],
-            ['op' => 'admin2', 'stream' => 'RMA', 'info' => 'G.Skill Trident Z5 (Vendor: G.Skill - Reason: Missing Box)', 'outcome' => 'Approved: Returned to Mfg', 'statusType' => 'neutral', 'created_at' => '2026-07-11 09:30:00'],
-            ['op' => 'admin1', 'stream' => 'Inspection', 'info' => 'Noctua NH-D15 Cooler (Source: Customer)', 'outcome' => 'Approved: Quarantined', 'statusType' => 'danger', 'created_at' => '2026-07-11 08:15:00']
+            ['op' => 'Demo Employee', 'stream' => 'Inspection', 'info' => 'Fractal Design Meshify C (Source: Warehouse)', 'outcome' => 'Approved: Restocked', 'statusType' => 'success', 'created_at' => '2026-07-12 16:20:00'],
+            ['op' => 'Demo Employee', 'stream' => 'RMA', 'info' => 'MSI MPG A850G (Vendor: MSI - Reason: DOA)', 'outcome' => 'Approved: Returned to Mfg', 'statusType' => 'neutral', 'created_at' => '2026-07-12 15:10:00'],
+            ['op' => 'Demo Employee', 'stream' => 'Inspection', 'info' => 'Lian Li UNI FAN SL120', 'outcome' => 'Voided by Manager', 'statusType' => 'void', 'created_at' => '2026-07-12 14:05:00'],
+            ['op' => 'Demo Employee', 'stream' => 'RMA', 'info' => 'G.Skill Trident Z5 (Vendor: G.Skill - Reason: Missing Box)', 'outcome' => 'Approved: Returned to Mfg', 'statusType' => 'neutral', 'created_at' => '2026-07-11 09:30:00'],
+            ['op' => 'Demo Employee', 'stream' => 'Inspection', 'info' => 'Noctua NH-D15 Cooler (Source: Customer)', 'outcome' => 'Approved: Quarantined', 'statusType' => 'danger', 'created_at' => '2026-07-11 08:15:00']
         ];
         foreach ($audits as $audit) { ReturnsAuditLog::create($audit); }
 

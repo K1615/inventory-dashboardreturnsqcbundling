@@ -12,10 +12,11 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         $this->call([
+            DemoUserSeeder::class,
+
             // // 1. Master Items must be seeded first to establish foreign keys
             ItemSeeder::class,
-            InitialAdminUserSeeder::class,
-
+            
             // // // 2. Dependent seeders run sequentially after
             // // // (Ensure these files have their references updated to item_id if they exist)
             // InventorySystemSeeder::class,

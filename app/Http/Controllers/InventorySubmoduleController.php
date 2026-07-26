@@ -4,16 +4,9 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\ApprovalRequest;
-use App\Models\BundleRequest;
-use App\Models\Item;
-use App\Models\QcInspection;
-use App\Models\ReturnsAuditLog;
-use App\Models\RmaRequest;
-use App\Models\ShipmentHandoff;
-use App\Models\StockAlert;
-use App\Models\SystemLog;
 use Illuminate\Http\Request;
+use App\Models\{Item, SystemLog, QcInspection, RmaRequest, ReturnsAuditLog, BundleRequest, StockAlert, ApprovalRequest, StockMovement, ShipmentHandoff};
+use App\Services\AutoReorderService;
 use Illuminate\Support\Facades\Artisan;
 
 class InventorySubmoduleController extends Controller
@@ -57,23 +50,23 @@ class InventorySubmoduleController extends Controller
     {
         return [
             'inventory' => Item::all(),
-            'systemLogs' => SystemLog::orderBy('created_at', 'desc')->take(50)->get()->map(fn ($l) => [
-                'user' => $l->user, 'action' => $l->action, 'timestamp' => $l->created_at->format('Y-m-d H:i:s'),
+            'systemLogs' => SystemLog::orderBy('created_at', 'desc')->take(50)->get()->map(fn($l) => [
+                'user' => $l->user, 'action' => $l->action, 'timestamp' => $l->created_at->format('Y-m-d H:i:s')
             ]),
-            'inspections' => QcInspection::where('status', 'Pending')->orderBy('created_at', 'desc')->get()->map(fn ($i) => [
-                'id' => $i->id, 'op' => $i->op, 'itemId' => $i->itemId, 'product' => $i->product, 'source' => $i->source, 'action' => $i->action, 'date' => $i->created_at->format('Y-m-d H:i:s'),
+            'inspections' => QcInspection::where('status', 'Pending')->orderBy('created_at', 'desc')->get()->map(fn($i) => [
+                'id' => $i->id, 'op' => $i->op, 'itemId' => $i->itemId, 'product' => $i->product, 'source' => $i->source, 'action' => $i->action, 'date' => $i->created_at->format('Y-m-d H:i:s')
             ]),
-            'rmas' => RmaRequest::where('status', 'Pending')->orderBy('created_at', 'desc')->get()->map(fn ($r) => [
-                'id' => $r->id, 'op' => $r->op, 'itemId' => $r->itemId, 'product' => $r->product, 'vendor' => $r->vendor, 'reasons' => $r->reasons, 'date' => $r->created_at->format('Y-m-d H:i:s'),
+            'rmas' => RmaRequest::where('status', 'Pending')->orderBy('created_at', 'desc')->get()->map(fn($r) => [
+                'id' => $r->id, 'op' => $r->op, 'itemId' => $r->itemId, 'product' => $r->product, 'vendor' => $r->vendor, 'reasons' => $r->reasons, 'date' => $r->created_at->format('Y-m-d H:i:s')
             ]),
-            'returnsAudit' => ReturnsAuditLog::orderBy('created_at', 'desc')->get()->map(fn ($a) => [
-                'op' => $a->op, 'stream' => $a->stream, 'info' => $a->info, 'outcome' => $a->outcome, 'statusType' => $a->statusType, 'time' => $a->created_at->format('Y-m-d H:i:s'),
+            'returnsAudit' => ReturnsAuditLog::orderBy('created_at', 'desc')->get()->map(fn($a) => [
+                'op' => $a->op, 'stream' => $a->stream, 'info' => $a->info, 'outcome' => $a->outcome, 'statusType' => $a->statusType, 'time' => $a->created_at->format('Y-m-d H:i:s')
             ]),
-            'bundlePending' => BundleRequest::where('status', 'Pending')->orderBy('created_at', 'desc')->get()->map(fn ($b) => [
-                'id' => $b->id, 'requester' => $b->requester, 'type' => $b->type, 'details' => $b->details, 'recipe' => $b->recipe, 'requestDate' => $b->created_at->format('Y-m-d H:i:s'),
+            'bundlePending' => BundleRequest::where('status', 'Pending')->orderBy('created_at', 'desc')->get()->map(fn($b) => [
+                'id' => $b->id, 'requester' => $b->requester, 'type' => $b->type, 'details' => $b->details, 'recipe' => $b->recipe, 'requestDate' => $b->created_at->format('Y-m-d H:i:s')
             ]),
-            'bundleAudit' => BundleRequest::where('status', '!=', 'Pending')->orderBy('updated_at', 'desc')->get()->map(fn ($b) => [
-                'id' => $b->id, 'requester' => $b->requester, 'approver' => $b->approver, 'type' => $b->type, 'details' => $b->details, 'status' => $b->status, 'actionDate' => $b->updated_at->format('Y-m-d H:i:s'),
+            'bundleAudit' => BundleRequest::where('status', '!=', 'Pending')->orderBy('updated_at', 'desc')->get()->map(fn($b) => [
+                'id' => $b->id, 'requester' => $b->requester, 'approver' => $b->approver, 'type' => $b->type, 'details' => $b->details, 'status' => $b->status, 'actionDate' => $b->updated_at->format('Y-m-d H:i:s')
             ]),
             'stockAlerts' => StockAlert::with('item')->whereIn('status', ['active', 'acknowledged'])->latest()->get(),
             'approvalRequests' => ApprovalRequest::with('items.item')->orderBy('created_at', 'desc')->get(),
@@ -86,7 +79,7 @@ class InventorySubmoduleController extends Controller
     {
         $request->validate([
             'target' => 'required|in:min,max',
-            'value' => 'required|integer|min:0',
+            'value' => 'required|integer|min:0'
         ]);
 
         $item = Item::findOrFail($id);
@@ -114,7 +107,7 @@ class InventorySubmoduleController extends Controller
         $item->auto_reorder = $request->boolean('enabled');
         $item->save();
 
-        SystemLog::create(['user' => $request->user()->name, 'action' => 'Turned auto-reorder '.($item->auto_reorder ? 'ON' : 'OFF')." for {$item->name} ({$item->id})."]);
+        SystemLog::create(['user' => $request->user()->name, 'action' => "Turned auto-reorder " . ($item->auto_reorder ? 'ON' : 'OFF') . " for {$item->name} ({$item->id})."]);
 
         Artisan::call('stock:check-levels');
 
@@ -130,23 +123,6 @@ class InventorySubmoduleController extends Controller
             'itemsArray' => 'required|array',
         ]);
 
-        $itemIds = collect($request->itemsArray)->pluck('id')->filter()->values();
-
-        $overstockedItems = StockAlert::whereIn('item_id', $itemIds)
-            ->where('status', 'active')
-            ->where('type', 'overstock')
-            ->with('item')
-            ->get();
-
-        if ($overstockedItems->isNotEmpty()) {
-            $names = $overstockedItems->pluck('item.name')->filter()->unique()->implode(', ');
-
-            return response()->json([
-                'success' => false,
-                'message' => "Cannot create a purchase order — the following item(s) are currently Overstock: {$names}.",
-            ], 422);
-        }
-
         $newRequest = ApprovalRequest::create([
             'timestamp' => now()->format('Y-m-d H:i'),
             'requester' => $request->user()->name,
@@ -158,9 +134,7 @@ class InventorySubmoduleController extends Controller
         ]);
 
         foreach ($request->itemsArray as $item) {
-            if (! isset($item['id'], $item['qty'])) {
-                continue;
-            }
+            if (!isset($item['id'], $item['qty'])) continue;
             $newRequest->items()->create([
                 'item_id' => $item['id'],
                 'qty' => $item['qty'],
@@ -225,7 +199,7 @@ class InventorySubmoduleController extends Controller
 
         // ADD THIS LINE HERE
         Artisan::call('stock:check-levels');
-
+        
         return response()->json($data);
     }
 
@@ -242,7 +216,6 @@ class InventorySubmoduleController extends Controller
             $pipeline->status = 'Voided';
             $pipeline->save();
             SystemLog::create(['user' => $request->user()->name, 'action' => "Voided purchase order #{$pipeline->reqId}."]);
-
             return response()->json($this->getAppData());
         }
 
@@ -275,7 +248,7 @@ class InventorySubmoduleController extends Controller
             ]);
 
             // 2. Actually add the quantity to the master inventory
-            $item = Item::find($lineItem->item_id);
+            $item = \App\Models\Item::find($lineItem->item_id);
             if ($item) {
                 // Incrementing the 'qty' field as established by your schema
                 $item->increment('qty', $lineItem->qty);
@@ -295,97 +268,77 @@ class InventorySubmoduleController extends Controller
 
     public function submitInspection(Request $request)
     {
-        $request->validate([
-            'itemId' => ['required', 'string', 'exists:items,id'],
-            'source' => ['required', 'string', 'max:255'],
-            'outcome' => ['required', 'string', 'max:255'],
-        ]);
-
         $part = Item::findOrFail($request->itemId);
         QcInspection::create([
-            'id' => 'REQ-I-'.rand(1000, 9999),
+            'id' => 'REQ-I-' . rand(1000, 9999),
             'op' => $request->user()->name,
             'itemId' => $part->id,
             'product' => $part->name,
             'source' => $request->source,
-            'action' => $request->outcome,
+            'action' => $request->outcome
         ]);
-
         return response()->json($this->getAppData());
     }
 
     public function submitRma(Request $request)
     {
-        $request->validate([
-            'itemId' => ['required', 'string', 'exists:items,id'],
-            'vendor' => ['required', 'string', 'max:255'],
-            'reasons' => ['required', 'string', 'max:2000'],
-        ]);
-
         $part = Item::findOrFail($request->itemId);
         RmaRequest::create([
-            'id' => 'REQ-R-'.rand(1000, 9999),
+            'id' => 'REQ-R-' . rand(1000, 9999),
             'op' => $request->user()->name,
             'itemId' => $part->id,
             'product' => $part->name,
             'vendor' => $request->vendor,
-            'reasons' => $request->reasons,
+            'reasons' => $request->reasons
         ]);
-
         return response()->json($this->getAppData());
     }
 
     public function resolveReturn(Request $request)
     {
-        $request->validate([
-            'type' => ['required', 'in:Inspection,RMA'],
-            'id' => ['required', 'string'],
-            'decision' => ['required', 'in:Approved,Voided'],
-        ]);
-
         $type = $request->type;
         $decision = $request->decision;
-
+        
         if ($type === 'Inspection') {
             $req = QcInspection::findOrFail($request->id);
             $req->status = $decision;
             $req->save();
             $infoStr = "{$req->product} (Source: {$req->source})";
-
+            
             if ($decision === 'Approved') {
                 if (str_contains($req->action, 'Restock') || str_contains($req->action, 'Open Box')) {
                     Item::where('id', $req->itemId)->increment('qty');
-                    $outcome = 'Approved: Restocked (+1)';
-                    $statusType = 'success';
+                    $outcome = "Approved: Restocked (+1)";
+                    $statusType = "success";
                 } else {
-                    $outcome = 'Approved: Quarantined';
-                    $statusType = 'danger';
+                    $outcome = "Approved: Quarantined";
+                    $statusType = "danger";
                 }
             } else {
-                $outcome = 'Voided by Manager';
-                $statusType = 'void';
+                $outcome = "Voided by Manager";
+                $statusType = "void";
             }
         } else {
             $req = RmaRequest::findOrFail($request->id);
             $req->status = $decision;
             $req->save();
             $infoStr = "{$req->product} (Vendor: {$req->vendor} - Reason: {$req->reasons})";
-
+            
             if ($decision === 'Approved') {
                 Item::where('id', $req->itemId)->decrement('qty');
-                $outcome = 'Approved: Returned to Mfg (-1)';
-                $statusType = 'neutral';
+                $outcome = "Approved: Returned to Mfg (-1)";
+                $statusType = "neutral";
             } else {
-                $outcome = 'Voided by Manager';
-                $statusType = 'void';
+                $outcome = "Voided by Manager";
+                $statusType = "void";
             }
         }
 
         // Make sure there is NO closing brace '}' right above this line!
         ReturnsAuditLog::create([
-            'op' => $request->user()->name, 'stream' => $type, 'info' => $infoStr, 'outcome' => $outcome, 'statusType' => $statusType,
+            'op' => $req->op, 'stream' => $type, 'info' => $infoStr, 'outcome' => $outcome, 'statusType' => $statusType
         ]);
-
+        
         SystemLog::create(['user' => $request->user()->name, 'action' => "Resolved QC {$type}: {$outcome} for {$req->product}"]);
 
         return response()->json($this->getAppData());
@@ -393,31 +346,18 @@ class InventorySubmoduleController extends Controller
 
     public function submitBundle(Request $request)
     {
-        $request->validate([
-            'type' => ['required', 'in:Pre-built,Custom Build'],
-            'details' => ['required', 'string', 'max:255'],
-            'recipe' => ['required', 'array', 'min:1'],
-            'recipe.*' => ['required', 'string', 'exists:items,id'],
-        ]);
-
         BundleRequest::create([
-            'id' => 'REQ-B-'.rand(1000, 9999),
+            'id' => 'REQ-B-' . rand(1000, 9999),
             'requester' => $request->user()->name,
             'type' => $request->type,
             'details' => $request->details,
-            'recipe' => $request->recipe,
+            'recipe' => $request->recipe
         ]);
-
         return response()->json($this->getAppData());
     }
 
     public function resolveBundle(Request $request)
     {
-        $request->validate([
-            'id' => ['required', 'string'],
-            'decision' => ['required', 'in:Approved,Voided'],
-        ]);
-
         $req = BundleRequest::findOrFail($request->id);
         $decision = $request->decision;
         $approver = $request->user()->name;
@@ -427,15 +367,15 @@ class InventorySubmoduleController extends Controller
             foreach ($req->recipe as $partId) {
                 $part = Item::find($partId);
                 // FIX: Look at 'qty', not 'stock'
-                if (! $part || $part->qty <= 0) {
+                if (!$part || $part->qty <= 0) {
                     $shortages[] = $part ? $part->name : $partId;
                 }
             }
 
-            if (! empty($shortages)) {
+            if (!empty($shortages)) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Cannot approve — out of stock: '.implode(', ', $shortages).'.',
+                    'message' => 'Cannot approve — out of stock: ' . implode(', ', $shortages) . '.',
                 ], 400);
             }
 
