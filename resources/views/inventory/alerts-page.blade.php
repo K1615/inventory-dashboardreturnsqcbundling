@@ -9,11 +9,23 @@
 
     <!-- Left Navigation Sidebar -->
     <aside class="w-full md:w-64 bg-[#1E3A8A] text-white flex flex-col justify-between md:sticky md:top-0 md:h-screen shadow-xl z-20 shrink-0">
-        <div class="flex flex-col">
-            <div class="p-6 border-b border-white/10">
+        <!-- Top Area: Branding & Hamburger Button -->
+        <div class="flex items-center justify-between p-6 border-b border-white/10 shrink-0">
+            <div>
                 <h1 class="text-lg font-bold tracking-wide text-white">ERP Inventory</h1>
                 <p class="text-[10px] text-blue-200 uppercase tracking-widest mt-0.5">Management System</p>
             </div>
+            
+            <!-- Hamburger Button (Visible only on mobile) -->
+            <button id="mobileMenuBtn" class="md:hidden text-white focus:outline-none focus:ring-2 focus:ring-white/50 rounded p-1 transition-colors">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <!-- Hamburger Icon -->
+                    <path id="hamburgerIcon" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                    <!-- Close (X) Icon -->
+                    <path id="closeIcon" class="hidden" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+        </div>
 
             @php
                 $currentRoute = request()->route()->getName();
@@ -21,7 +33,11 @@
                 $inactiveClass = 'font-semibold text-blue-100 border-l-4 border-transparent hover:text-white hover:bg-white/10 rounded-lg';
             @endphp
 
+            <!-- Collapsible Content: Navigation Links + Role Bar -->
+        <div id="mobileMenu" class="hidden md:flex flex-col justify-between flex-1 overflow-hidden transition-all duration-300 ease-in-out">
             <nav class="p-4 flex flex-col gap-1.5 overflow-y-auto flex-1">
+                
+                <!-- PASTE YOUR EXISTING <a> TAGS HERE -->
                 <!-- Dashboard -->
                 <a href="{{ route('inventory.dashboard', ['tab' => 'dashboard']) }}"
                 class="nav-item px-4 py-2.5 text-xs transition-all {{ $currentRoute === 'inventory.dashboard' ? $activeClass : $inactiveClass }}">
@@ -64,11 +80,12 @@
                 class="nav-item px-4 py-2.5 text-xs transition-all {{ $inactiveClass }}">
                     Product Bundling
                 </a>
-
             </nav>
-        </div>
 
-        @include('partials.role-bar')
+            <div class="mt-auto shrink-0">
+                @include('partials.role-bar')
+            </div>
+        </div>
     </aside>
 
     <!-- Main Content -->
@@ -90,6 +107,25 @@
     // no longer exist on this page). Each mutation handler in alerts-reorders.blade.php
     // still tries to call it in a try/catch, so nothing breaks — it just silently
     // no-ops here.
+
+    document.addEventListener('DOMContentLoaded', () => {
+        const mobileBtn = document.getElementById('mobileMenuBtn');
+        const mobileMenu = document.getElementById('mobileMenu');
+        const hamIcon = document.getElementById('hamburgerIcon');
+        const closeIcon = document.getElementById('closeIcon');
+
+        if (mobileBtn && mobileMenu) {
+            mobileBtn.addEventListener('click', () => {
+                // Toggle menu visibility
+                mobileMenu.classList.toggle('hidden');
+                mobileMenu.classList.toggle('flex');
+                
+                // Toggle between Hamburger and 'X' icons
+                hamIcon.classList.toggle('hidden');
+                closeIcon.classList.toggle('hidden');
+            });
+        }
+    });
 
     document.addEventListener('DOMContentLoaded', function () {
         // The shared partial ships with class="hidden" because it was built to be
